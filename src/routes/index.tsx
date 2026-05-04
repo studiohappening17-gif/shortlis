@@ -88,22 +88,22 @@ function HomePage() {
         <ThemeToggle />
       </div>
 
-      <main className="mx-auto max-w-2xl px-4 py-12 sm:py-20">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
+      <main className="mx-auto max-w-xl px-4 py-12 sm:py-16">
+        <header className="text-center mb-10">
+          <h1 className="text-4xl sm:text-5xl font-semibold tracking-[-0.02em] text-foreground">
             Amazon Discount Finder
           </h1>
-          <p className="mt-3 text-base sm:text-lg text-muted-foreground">
+          <p className="mt-3 text-base text-muted-foreground">
             Find hidden 80%+ savings on Amazon products
           </p>
         </header>
 
-        <div className="rounded-2xl border bg-card shadow-sm p-6 sm:p-8 space-y-6">
+        <div className="rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8 space-y-6">
           {/* Department */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Department</label>
+            <label className="text-sm font-medium text-foreground/80">Department</label>
             <Select value={dept} onValueChange={setDept} disabled={loading}>
-              <SelectTrigger className="h-12 text-base">
+              <SelectTrigger className="h-12 text-base rounded-[14px] border-border hover:border-amazon focus:border-amazon transition-colors">
                 <SelectValue placeholder="Any" />
               </SelectTrigger>
               <SelectContent>
@@ -131,7 +131,7 @@ function HomePage() {
           <Button
             onClick={handleSearch}
             disabled={searching || loading}
-            className="w-full h-14 text-base font-semibold bg-amazon hover:bg-amazon-hover text-amazon-foreground"
+            className="w-full h-14 text-base font-medium rounded-[14px] bg-amazon hover:bg-amazon-hover active:brightness-95 text-amazon-foreground shadow-sm transition-colors"
           >
             {searching ? <Loader2 className="h-5 w-5 animate-spin" /> : (
               <><Search className="h-4 w-4 mr-2" /> Search</>
@@ -139,6 +139,55 @@ function HomePage() {
           </Button>
         </div>
       </main>
+    </div>
+  );
+}
+
+function ChipGroup({
+  label,
+  tiers,
+  value,
+  onChange,
+}: {
+  label: string;
+  tiers: Tier[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <label className="text-sm font-medium text-foreground/80">{label}</label>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {tiers.map((t) => {
+          const selected = value === t.value;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onChange(t.value)}
+              className={cn(
+                "relative rounded-[14px] border px-3 py-4 text-sm font-medium transition-all",
+                "flex flex-col items-center justify-center gap-1.5 min-h-[80px]",
+                selected
+                  ? "border-chip-selected-border bg-chip-selected-bg text-chip-selected-text shadow-sm"
+                  : "border-border bg-card text-foreground/75 hover:border-amazon hover:shadow-sm"
+              )}
+            >
+              <span
+                className={cn(
+                  "h-5 w-5 rounded-full flex items-center justify-center border transition-colors",
+                  selected
+                    ? "border-amazon bg-amazon text-amazon-foreground"
+                    : "border-border"
+                )}
+              >
+                {selected && <Check className="h-3 w-3" strokeWidth={3} />}
+              </span>
+              <span className="text-center leading-tight">{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
