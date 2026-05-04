@@ -138,6 +138,10 @@ function HomePage() {
             )}
           </Button>
         </div>
+
+        <footer className="mt-10 text-center text-xs text-muted-foreground/80">
+          As an Amazon Associate, we earn from qualifying purchases.
+        </footer>
       </main>
     </div>
   );
