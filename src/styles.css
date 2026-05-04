@@ -136,6 +136,9 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
+  --amazon: oklch(0.83 0.17 85);
+  --amazon-hover: oklch(0.88 0.17 85);
+  --amazon-foreground: oklch(0.15 0.02 264);
 }
 
 @layer base {
