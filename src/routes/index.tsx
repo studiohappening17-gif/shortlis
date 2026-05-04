@@ -157,7 +157,7 @@ function ChipGroup({
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-foreground/80">{label}</label>
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
         {tiers.map((t) => {
           const selected = value === t.value;
           return (
