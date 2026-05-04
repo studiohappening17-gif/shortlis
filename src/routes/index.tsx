@@ -140,7 +140,7 @@ function HomePage() {
         </div>
 
         <footer className="mt-10 text-center text-xs text-muted-foreground/80">
-          As an Amazon Associate, we earn from qualifying purchases.
+          Affiliate disclosure: As an Amazon Associate, we earn from qualifying purchases.
         </footer>
       </main>
     </div>
