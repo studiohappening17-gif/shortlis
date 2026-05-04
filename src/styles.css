@@ -98,6 +98,9 @@
   --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
   --sidebar-border: oklch(0.929 0.013 255.508);
   --sidebar-ring: oklch(0.704 0.04 256.788);
+  --amazon: oklch(0.83 0.17 85);
+  --amazon-hover: oklch(0.78 0.17 85);
+  --amazon-foreground: oklch(0.15 0.02 264);
 }
 
 .dark {
