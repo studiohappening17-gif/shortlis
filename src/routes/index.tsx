@@ -94,7 +94,7 @@ function HomePage() {
             Shortlisted Amazon Deals
           </h1>
           <p className="mt-3 text-base text-muted-foreground">
-            Discover curated Amazon steals, selected just for you
+            Filter and explore curated Amazon deals tailored to your search
           </p>
         </header>
 
