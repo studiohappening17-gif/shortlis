@@ -1,52 +1,45 @@
-## Amazon Discount Finder
+## Goal
+Restyle the home search page (`/`) to a clean, modern SaaS look using Inter + an amber palette. Light mode only — dark mode tokens stay untouched.
 
-A search tool that routes shoppers to curated Amazon affiliate URLs based on department, discount tier, and price range, plus an admin dashboard to manage everything.
+## Changes
 
-### Public search page (`/`)
+### 1. `src/styles.css`
+- Add Google Fonts `Inter` import (weights 400/500/600).
+- Set `body { font-family: "Inter", system-ui, sans-serif; font-weight: 400; }`.
+- Add a base rule for headings: `font-weight: 600; letter-spacing: -0.02em;`.
+- Override **light-mode** tokens only (inside `:root`), leaving `.dark` block as-is:
+  - `--background: oklch(0.985 0.005 90)` (warm off-white page) — keep `--card` pure white `oklch(1 0 0)`.
+  - `--foreground: #111827`, `--muted-foreground: #6B7280`.
+  - `--border: #E5E7EB`, `--input: #E5E7EB`.
+  - `--primary: #F59E0B`, `--primary-foreground: #FFFFFF`, `--ring: #F59E0B`.
+  - `--radius: 0.875rem` (14px) so buttons/cards/inputs inherit the new radius.
+  - Replace bright `--amazon` mapping in light mode:
+    - `--amazon: #F59E0B`
+    - `--amazon-hover: #D97706`
+    - `--amazon-foreground: #FFFFFF`
+  - Add new tokens for chip selected state: `--chip-selected-bg: #FEF3C7`, `--chip-selected-border: #F59E0B`, `--chip-selected-text: #92400E`. Register in `@theme inline`.
 
-Pixel-faithful rebuild of the mockup:
-- Centered card with "Amazon Discount Finder" heading + subtitle
-- **Department** dropdown (loaded from DB, plus "Any")
-- **Discount** chip selector (Any / 10%+ / 25%+ / 50%+ / 70%+ — managed in admin)
-- **Price** chip selector ($Any / Under $15 / $30 / $100 / $200 — managed in admin)
-- Selected chips highlighted in Amazon yellow with checkmark
-- Yellow "Search" CTA
-- Dark/Light mode toggle (sun/moon) in top-right; persists in localStorage; both themes polished
-- Fully responsive (chips wrap on mobile)
+### 2. `src/routes/index.tsx`
+- Container card: `rounded-[20px]`, white bg, `shadow-[0_8px_30px_rgb(0,0,0,0.06)]`, border `border-border/60`, increase internal padding.
+- Title: `font-semibold tracking-[-0.02em] text-[#111827]` (auto via token), subtitle uses `text-muted-foreground`.
+- Department `SelectTrigger`: `rounded-[14px]`, `border-[#E5E7EB]`, hover border amber, focus ring amber.
+- Chip buttons (`ChipGroup`):
+  - Unselected: `bg-white border-[#E5E7EB] text-[#374151] hover:border-[#F59E0B] hover:shadow-sm rounded-[14px] transition-all`.
+  - Selected: `bg-[--chip-selected-bg] border-[--chip-selected-border] text-[--chip-selected-text] shadow-sm`.
+  - Check circle: amber when selected (`bg-[#F59E0B] text-white`).
+  - Gap tightened to `gap-3`, min-height kept; consistent 12–16px spacing.
+- Search button: `rounded-[14px] font-medium bg-[#F59E0B] hover:bg-[#D97706] active:bg-[#B45309] text-white shadow-sm transition-colors`. Replace existing `bg-amazon` classes.
+- Section labels: `text-sm font-medium text-[#374151]` (slightly stronger than muted) with consistent `space-y-3`.
+- Outer wrapper spacing: `py-12 sm:py-16`, max width `max-w-xl` for a tighter, premium feel.
 
-**Search behavior:** On submit, query `affiliate_links` for the matching `dept_id` + `discount_range` + `price_range`. If found → open `affiliate_url` in a new tab. If "Any" is chosen on any field, or no match exists → open the configured fallback URL.
+### 3. `ThemeToggle` / admin button area
+- No structural changes; they pick up new radius/border tokens automatically.
 
-### Admin dashboard (`/admin`)
+## Out of scope
+- Dark mode palette (intentionally untouched).
+- Admin and login pages (only home page in this request — can extend later if desired).
+- Adding new functionality.
 
-Protected by Supabase email/password auth + an `admin` role (separate `user_roles` table, security-definer `has_role` function — no client-side role checks). Non-admins see "Unauthorized".
-
-Three tabs:
-1. **Departments** — table with add/edit/delete (name field)
-2. **Affiliate Links** — table listing dept + discount + price + URL; add/edit form uses dropdowns populated from departments and from the discount/price option tables
-3. **Settings** — edit the fallback Amazon URL; manage available **Discount tiers** and **Price tiers** (label + value used as the matching key)
-
-Login page at `/login`. First admin is bootstrapped by inserting their `user_id` into `user_roles` (instructions shown in chat after signup).
-
-### Database (Supabase / Lovable Cloud)
-
-- `departments` (id, name, created_at)
-- `discount_tiers` (id, label, value, sort_order)
-- `price_tiers` (id, label, value, sort_order)
-- `affiliate_links` (id, dept_id → departments, discount_range, price_range, affiliate_url, created_at)
-- `app_settings` (key, value) — stores `fallback_url`
-- `user_roles` (id, user_id, role enum) + `has_role()` security-definer function
-
-Seeded with the tiers shown in the mockup and a placeholder fallback URL.
-
-### Technical notes
-
-- TanStack Start file-based routes: `/`, `/login`, `/admin` (under `_authenticated/_admin` layout guards)
-- Search read uses public Supabase client (RLS allows anonymous SELECT on `departments`, `discount_tiers`, `price_tiers`, `affiliate_links`, `app_settings`)
-- All admin writes go through `createServerFn` handlers protected by `requireSupabaseAuth` + `has_role(user, 'admin')` check
-- shadcn components: Card, Select, Button, Input, Table, Dialog, Tabs, Switch (for theme), Sonner toasts
-- Theme via `class="dark"` on `<html>`; toggle component stores preference
-
-### Out of scope
-
-- Calling Amazon's API / live product results (the app routes to curated affiliate URLs, per spec)
-- Self-serve admin signup (admin role granted manually after first signup for security)
+## Verification
+- Visual check at 981px and a mobile width (375px) in light mode.
+- Confirm dark mode still renders with previous palette.
