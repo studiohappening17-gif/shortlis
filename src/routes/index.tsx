@@ -1,26 +1,193 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Check, Loader2, Search, Settings } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: HomePage,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+type Tier = { id: string; label: string; value: string; sort_order: number };
+type Dept = { id: string; name: string };
+
+function HomePage() {
+  const [departments, setDepartments] = useState<Dept[]>([]);
+  const [discountTiers, setDiscountTiers] = useState<Tier[]>([]);
+  const [priceTiers, setPriceTiers] = useState<Tier[]>([]);
+  const [dept, setDept] = useState("any");
+  const [discount, setDiscount] = useState("any");
+  const [price, setPrice] = useState("any");
+  const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from("departments").select("id,name").order("name"),
+      supabase.from("discount_tiers").select("*").order("sort_order"),
+      supabase.from("price_tiers").select("*").order("sort_order"),
+    ]).then(([d, dt, pt]) => {
+      setDepartments(d.data ?? []);
+      setDiscountTiers(dt.data ?? []);
+      setPriceTiers(pt.data ?? []);
+      // ensure first option selected
+      if (dt.data?.length) setDiscount(dt.data[0].value);
+      if (pt.data?.length) setPrice(pt.data[0].value);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleSearch = async () => {
+    setSearching(true);
+    try {
+      const fallback = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "fallback_url")
+        .maybeSingle();
+      const fallbackUrl = fallback.data?.value ?? "https://www.amazon.com";
+
+      let target = fallbackUrl;
+      if (dept !== "any" && discount !== "any" && price !== "any") {
+        const { data } = await supabase
+          .from("affiliate_links")
+          .select("affiliate_url")
+          .eq("dept_id", dept)
+          .eq("discount_range", discount)
+          .eq("price_range", price)
+          .maybeSingle();
+        if (data?.affiliate_url) target = data.affiliate_url;
+      }
+      window.open(target, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      toast.error("Search failed");
+      console.error(e);
+    } finally {
+      setSearching(false);
+    }
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background relative">
+      <div className="absolute top-4 right-4 flex gap-2 z-10">
+        <Link to="/admin">
+          <Button variant="ghost" size="icon" aria-label="Admin">
+            <Settings className="h-4 w-4" />
+          </Button>
+        </Link>
+        <ThemeToggle />
+      </div>
+
+      <main className="mx-auto max-w-2xl px-4 py-12 sm:py-20">
+        <header className="text-center mb-8">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground">
+            Amazon Discount Finder
+          </h1>
+          <p className="mt-3 text-base sm:text-lg text-muted-foreground">
+            Find hidden 80%+ savings on Amazon products
+          </p>
+        </header>
+
+        <div className="rounded-2xl border bg-card shadow-sm p-6 sm:p-8 space-y-6">
+          {/* Department */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted-foreground">Department</label>
+            <Select value={dept} onValueChange={setDept} disabled={loading}>
+              <SelectTrigger className="h-12 text-base">
+                <SelectValue placeholder="Any" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                {departments.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Discount */}
+          <ChipGroup
+            label="Discount"
+            tiers={discountTiers}
+            value={discount}
+            onChange={setDiscount}
+          />
+
+          {/* Price */}
+          <ChipGroup label="Price" tiers={priceTiers} value={price} onChange={setPrice} />
+
+          <Button
+            onClick={handleSearch}
+            disabled={searching || loading}
+            className="w-full h-14 text-base font-semibold bg-amazon hover:bg-amazon-hover text-amazon-foreground"
+          >
+            {searching ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+              <><Search className="h-4 w-4 mr-2" /> Search</>
+            )}
+          </Button>
+        </div>
+      </main>
     </div>
   );
 }
 
-function Index() {
-  return <PlaceholderIndex />;
+function ChipGroup({
+  label,
+  tiers,
+  value,
+  onChange,
+}: {
+  label: string;
+  tiers: Tier[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      <label className="text-sm font-medium text-muted-foreground">{label}</label>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        {tiers.map((t) => {
+          const selected = value === t.value;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onChange(t.value)}
+              className={cn(
+                "relative rounded-xl border-2 px-3 py-4 text-sm font-medium transition-all",
+                "flex flex-col items-center justify-center gap-1.5 min-h-[80px]",
+                selected
+                  ? "border-amazon bg-amazon/10 text-foreground shadow-sm"
+                  : "border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground/40"
+              )}
+            >
+              <span
+                className={cn(
+                  "h-5 w-5 rounded-full flex items-center justify-center border",
+                  selected
+                    ? "border-amazon bg-amazon text-amazon-foreground"
+                    : "border-muted-foreground/40"
+                )}
+              >
+                {selected && <Check className="h-3 w-3" strokeWidth={3} />}
+              </span>
+              <span className="text-center leading-tight">{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
