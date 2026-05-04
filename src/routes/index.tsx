@@ -91,7 +91,7 @@ function HomePage() {
       <main className="mx-auto max-w-xl px-4 py-12 sm:py-16">
         <header className="text-center mb-10">
           <h1 className="text-4xl font-semibold tracking-[-0.02em] text-foreground sm:text-4xl">
-            Amazon Discount Finder
+            Shortlisted Amazon Deals
           </h1>
           <p className="mt-3 text-base text-muted-foreground">
             Discover curated Amazon steals, selected just for you
