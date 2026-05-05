@@ -356,13 +356,13 @@ function LinksTab() {
 
 /* ---------- Keywords ---------- */
 
-type Keyword = { id: string; label: string; affiliate_url: string; sort_order: number };
+type Keyword = { id: string; label: string; affiliate_url: string; sort_order: number; emoji: string | null };
 
 function KeywordsTab() {
   const [items, setItems] = useState<Keyword[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Keyword | null>(null);
-  const [form, setForm] = useState({ label: "", affiliate_url: "", sort_order: 0 });
+  const [form, setForm] = useState({ label: "", affiliate_url: "", sort_order: 0, emoji: "" });
 
   const load = () =>
     supabase
@@ -375,12 +375,12 @@ function KeywordsTab() {
   const openAdd = () => {
     setEditing(null);
     const nextSort = items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
-    setForm({ label: "", affiliate_url: "", sort_order: nextSort });
+    setForm({ label: "", affiliate_url: "", sort_order: nextSort, emoji: "" });
     setOpen(true);
   };
   const openEdit = (k: Keyword) => {
     setEditing(k);
-    setForm({ label: k.label, affiliate_url: k.affiliate_url, sort_order: k.sort_order });
+    setForm({ label: k.label, affiliate_url: k.affiliate_url, sort_order: k.sort_order, emoji: k.emoji ?? "" });
     setOpen(true);
   };
   const save = async () => {
@@ -388,7 +388,7 @@ function KeywordsTab() {
       toast.error("Fill all fields");
       return;
     }
-    const payload = { label: form.label.trim(), affiliate_url: form.affiliate_url.trim(), sort_order: form.sort_order };
+    const payload = { label: form.label.trim(), affiliate_url: form.affiliate_url.trim(), sort_order: form.sort_order, emoji: form.emoji.trim() || null };
     const op = editing
       ? supabase.from("keywords").update(payload).eq("id", editing.id)
       : supabase.from("keywords").insert(payload);
@@ -415,11 +415,12 @@ function KeywordsTab() {
       <div className="border rounded-lg bg-card">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Label</TableHead><TableHead>URL</TableHead><TableHead className="w-28">Order</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
+            <TableHead className="w-16">Emoji</TableHead><TableHead>Label</TableHead><TableHead>URL</TableHead><TableHead className="w-28">Order</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {items.map((k) => (
               <TableRow key={k.id}>
+                <TableCell className="text-xl">{k.emoji ?? ""}</TableCell>
                 <TableCell className="font-medium">{k.label}</TableCell>
                 <TableCell className="max-w-xs truncate text-muted-foreground">
                   <a href={k.affiliate_url} target="_blank" rel="noopener noreferrer" className="hover:underline">{k.affiliate_url}</a>
@@ -441,7 +442,7 @@ function KeywordsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {items.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No keywords yet</TableCell></TableRow>}
+            {items.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No keywords yet</TableCell></TableRow>}
           </TableBody>
         </Table>
       </div>
@@ -450,6 +451,10 @@ function KeywordsTab() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editing ? "Edit" : "New"} keyword</DialogTitle></DialogHeader>
           <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Emoji / Icon (optional)</Label>
+              <Input value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} placeholder="🎁" maxLength={8} />
+            </div>
             <div className="space-y-1.5">
               <Label>Label</Label>
               <Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="Giftable tech under $30" />
