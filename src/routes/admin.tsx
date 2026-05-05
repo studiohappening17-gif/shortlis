@@ -332,6 +332,13 @@ function LinksTab() {
                   <SelectContent>{prices.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Reviews</Label>
+                <Select value={form.review_range} onValueChange={(v) => setForm({ ...form, review_range: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{reviews.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Affiliate URL</Label>
