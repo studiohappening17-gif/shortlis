@@ -119,6 +119,7 @@ export type Database = {
         Row: {
           affiliate_url: string
           created_at: string
+          emoji: string | null
           id: string
           label: string
           sort_order: number
@@ -126,6 +127,7 @@ export type Database = {
         Insert: {
           affiliate_url: string
           created_at?: string
+          emoji?: string | null
           id?: string
           label: string
           sort_order?: number
@@ -133,6 +135,7 @@ export type Database = {
         Update: {
           affiliate_url?: string
           created_at?: string
+          emoji?: string | null
           id?: string
           label?: string
           sort_order?: number
