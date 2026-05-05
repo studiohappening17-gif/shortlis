@@ -28,7 +28,7 @@ function HomePage() {
 
   useEffect(() => {
     Promise.all([
-      supabase.from("departments").select("id,name").order("name"),
+      supabase.from("departments").select("id,name").order("sort_order").order("name"),
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
     ]).then(([d, dt, pt]) => {
