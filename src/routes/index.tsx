@@ -20,9 +20,11 @@ function HomePage() {
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [discountTiers, setDiscountTiers] = useState<Tier[]>([]);
   const [priceTiers, setPriceTiers] = useState<Tier[]>([]);
+  const [reviewTiers, setReviewTiers] = useState<Tier[]>([]);
   const [dept, setDept] = useState("any");
   const [discount, setDiscount] = useState("any");
   const [price, setPrice] = useState("any");
+  const [review, setReview] = useState("any");
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
 
@@ -31,13 +33,16 @@ function HomePage() {
       supabase.from("departments").select("id,name").order("sort_order").order("name"),
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
-    ]).then(([d, dt, pt]) => {
+      supabase.from("review_tiers").select("*").order("sort_order"),
+    ]).then(([d, dt, pt, rt]) => {
       setDepartments(d.data ?? []);
       setDiscountTiers(dt.data ?? []);
       setPriceTiers(pt.data ?? []);
+      setReviewTiers(rt.data ?? []);
       // ensure first option selected
       if (dt.data?.length) setDiscount(dt.data[0].value);
       if (pt.data?.length) setPrice(pt.data[0].value);
+      if (rt.data?.length) setReview(rt.data[0].value);
       setLoading(false);
     });
   }, []);
@@ -53,13 +58,14 @@ function HomePage() {
       const fallbackUrl = fallback.data?.value ?? "https://www.amazon.com";
 
       let target = fallbackUrl;
-      if (dept !== "any" && discount !== "any" && price !== "any") {
+      if (dept !== "any" && discount !== "any" && price !== "any" && review !== "any") {
         const { data } = await supabase
           .from("affiliate_links")
           .select("affiliate_url")
           .eq("dept_id", dept)
           .eq("discount_range", discount)
           .eq("price_range", price)
+          .eq("review_range", review)
           .maybeSingle();
         if (data?.affiliate_url) target = data.affiliate_url;
       }
@@ -123,13 +129,21 @@ function HomePage() {
             </div>
           </div>
 
-          {/* Discount */}
-          <ChipGroup
-            label="Discount"
-            tiers={discountTiers}
-            value={discount}
-            onChange={setDiscount}
-          />
+          {/* Discount + Reviews */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <ChipGroup
+              label="Discount"
+              tiers={discountTiers}
+              value={discount}
+              onChange={setDiscount}
+            />
+            <ChipGroup
+              label="Reviews"
+              tiers={reviewTiers}
+              value={review}
+              onChange={setReview}
+            />
+          </div>
 
           {/* Price */}
           <ChipGroup label="Price" tiers={priceTiers} value={price} onChange={setPrice} />
@@ -167,7 +181,7 @@ function ChipGroup({
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-foreground/80">{label}</label>
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+      <div className={cn("grid gap-2 sm:gap-3", tiers.length <= 2 ? "grid-cols-2" : "grid-cols-3 sm:grid-cols-5")}>
         {tiers.map((t) => {
           const selected = value === t.value;
           return (

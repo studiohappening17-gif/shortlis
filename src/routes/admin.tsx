@@ -44,6 +44,7 @@ type Link_ = {
   dept_id: string;
   discount_range: string;
   price_range: string;
+  review_range: string;
   affiliate_url: string;
 };
 
@@ -223,37 +224,40 @@ function LinksTab() {
   const [depts, setDepts] = useState<Dept[]>([]);
   const [discounts, setDiscounts] = useState<Tier[]>([]);
   const [prices, setPrices] = useState<Tier[]>([]);
+  const [reviews, setReviews] = useState<Tier[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Link_ | null>(null);
-  const [form, setForm] = useState({ dept_id: "", discount_range: "", price_range: "", affiliate_url: "" });
+  const [form, setForm] = useState({ dept_id: "", discount_range: "", price_range: "", review_range: "", affiliate_url: "" });
 
   const load = async () => {
-    const [l, d, dt, pt] = await Promise.all([
+    const [l, d, dt, pt, rt] = await Promise.all([
       supabase.from("affiliate_links").select("*").order("created_at", { ascending: false }),
       supabase.from("departments").select("id,name,sort_order").order("sort_order").order("name"),
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
+      supabase.from("review_tiers").select("*").order("sort_order"),
     ]);
-    setItems(l.data ?? []);
+    setItems((l.data as Link_[]) ?? []);
     setDepts(d.data ?? []);
     setDiscounts(dt.data ?? []);
     setPrices(pt.data ?? []);
+    setReviews(rt.data ?? []);
   };
   useEffect(() => { load(); }, []);
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ dept_id: "", discount_range: "", price_range: "", affiliate_url: "" });
+    setForm({ dept_id: "", discount_range: "", price_range: "", review_range: "", affiliate_url: "" });
     setOpen(true);
   };
   const openEdit = (l: Link_) => {
     setEditing(l);
-    setForm({ dept_id: l.dept_id, discount_range: l.discount_range, price_range: l.price_range, affiliate_url: l.affiliate_url });
+    setForm({ dept_id: l.dept_id, discount_range: l.discount_range, price_range: l.price_range, review_range: l.review_range ?? "any", affiliate_url: l.affiliate_url });
     setOpen(true);
   };
 
   const save = async () => {
-    if (!form.dept_id || !form.discount_range || !form.price_range || !form.affiliate_url) {
+    if (!form.dept_id || !form.discount_range || !form.price_range || !form.review_range || !form.affiliate_url) {
       toast.error("Fill all fields");
       return;
     }
@@ -281,7 +285,7 @@ function LinksTab() {
       <div className="border rounded-lg bg-card">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Department</TableHead><TableHead>Discount</TableHead><TableHead>Price</TableHead><TableHead>URL</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
+            <TableHead>Department</TableHead><TableHead>Discount</TableHead><TableHead>Price</TableHead><TableHead>Reviews</TableHead><TableHead>URL</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {items.map((l) => (
@@ -289,6 +293,7 @@ function LinksTab() {
                 <TableCell className="font-medium">{deptName(l.dept_id)}</TableCell>
                 <TableCell>{tierLabel(discounts, l.discount_range)}</TableCell>
                 <TableCell>{tierLabel(prices, l.price_range)}</TableCell>
+                <TableCell>{tierLabel(reviews, l.review_range)}</TableCell>
                 <TableCell className="max-w-xs truncate text-muted-foreground"><a href={l.affiliate_url} target="_blank" rel="noopener noreferrer" className="hover:underline">{l.affiliate_url}</a></TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
@@ -296,7 +301,7 @@ function LinksTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {items.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No affiliate links yet</TableCell></TableRow>}
+            {items.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No affiliate links yet</TableCell></TableRow>}
           </TableBody>
         </Table>
       </div>
@@ -327,6 +332,13 @@ function LinksTab() {
                   <SelectContent>{prices.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Reviews</Label>
+                <Select value={form.review_range} onValueChange={(v) => setForm({ ...form, review_range: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                  <SelectContent>{reviews.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Affiliate URL</Label>
@@ -346,16 +358,19 @@ function SettingsTab() {
   const [fallback, setFallback] = useState("");
   const [discounts, setDiscounts] = useState<Tier[]>([]);
   const [prices, setPrices] = useState<Tier[]>([]);
+  const [reviews, setReviews] = useState<Tier[]>([]);
 
   const load = async () => {
-    const [s, d, p] = await Promise.all([
+    const [s, d, p, r] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", "fallback_url").maybeSingle(),
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
+      supabase.from("review_tiers").select("*").order("sort_order"),
     ]);
     setFallback(s.data?.value ?? "");
     setDiscounts(d.data ?? []);
     setPrices(p.data ?? []);
+    setReviews(r.data ?? []);
   };
   useEffect(() => { load(); }, []);
 
@@ -377,11 +392,12 @@ function SettingsTab() {
 
       <TierEditor title="Discount tiers" table="discount_tiers" items={discounts} reload={load} />
       <TierEditor title="Price tiers" table="price_tiers" items={prices} reload={load} />
+      <TierEditor title="Review tiers" table="review_tiers" items={reviews} reload={load} />
     </div>
   );
 }
 
-function TierEditor({ title, table, items, reload }: { title: string; table: "discount_tiers" | "price_tiers"; items: Tier[]; reload: () => void }) {
+function TierEditor({ title, table, items, reload }: { title: string; table: "discount_tiers" | "price_tiers" | "review_tiers"; items: Tier[]; reload: () => void }) {
   const [label, setLabel] = useState("");
   const [value, setValue] = useState("");
   const [sort, setSort] = useState(0);
