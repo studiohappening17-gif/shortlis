@@ -247,17 +247,17 @@ function LinksTab() {
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ dept_id: "", discount_range: "", price_range: "", affiliate_url: "" });
+    setForm({ dept_id: "", discount_range: "", price_range: "", review_range: "", affiliate_url: "" });
     setOpen(true);
   };
   const openEdit = (l: Link_) => {
     setEditing(l);
-    setForm({ dept_id: l.dept_id, discount_range: l.discount_range, price_range: l.price_range, affiliate_url: l.affiliate_url });
+    setForm({ dept_id: l.dept_id, discount_range: l.discount_range, price_range: l.price_range, review_range: l.review_range ?? "any", affiliate_url: l.affiliate_url });
     setOpen(true);
   };
 
   const save = async () => {
-    if (!form.dept_id || !form.discount_range || !form.price_range || !form.affiliate_url) {
+    if (!form.dept_id || !form.discount_range || !form.price_range || !form.review_range || !form.affiliate_url) {
       toast.error("Fill all fields");
       return;
     }
