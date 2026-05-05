@@ -109,10 +109,12 @@ function AdminPage() {
           <TabsList>
             <TabsTrigger value="links">Affiliate Links</TabsTrigger>
             <TabsTrigger value="departments">Departments</TabsTrigger>
+            <TabsTrigger value="keywords">Keywords</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           <TabsContent value="links" className="mt-6"><LinksTab /></TabsContent>
           <TabsContent value="departments" className="mt-6"><DepartmentsTab /></TabsContent>
+          <TabsContent value="keywords" className="mt-6"><KeywordsTab /></TabsContent>
           <TabsContent value="settings" className="mt-6"><SettingsTab /></TabsContent>
         </Tabs>
       </main>
@@ -343,6 +345,122 @@ function LinksTab() {
             <div className="space-y-2">
               <Label>Affiliate URL</Label>
               <Input placeholder="https://amazon.com/..." value={form.affiliate_url} onChange={(e) => setForm({ ...form, affiliate_url: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter><Button onClick={save}>Save</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+/* ---------- Keywords ---------- */
+
+type Keyword = { id: string; label: string; affiliate_url: string; sort_order: number };
+
+function KeywordsTab() {
+  const [items, setItems] = useState<Keyword[]>([]);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Keyword | null>(null);
+  const [form, setForm] = useState({ label: "", affiliate_url: "", sort_order: 0 });
+
+  const load = () =>
+    supabase
+      .from("keywords")
+      .select("*")
+      .order("sort_order")
+      .then(({ data }) => setItems((data as Keyword[]) ?? []));
+  useEffect(() => { load(); }, []);
+
+  const openAdd = () => {
+    setEditing(null);
+    const nextSort = items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
+    setForm({ label: "", affiliate_url: "", sort_order: nextSort });
+    setOpen(true);
+  };
+  const openEdit = (k: Keyword) => {
+    setEditing(k);
+    setForm({ label: k.label, affiliate_url: k.affiliate_url, sort_order: k.sort_order });
+    setOpen(true);
+  };
+  const save = async () => {
+    if (!form.label.trim() || !form.affiliate_url.trim()) {
+      toast.error("Fill all fields");
+      return;
+    }
+    const payload = { label: form.label.trim(), affiliate_url: form.affiliate_url.trim(), sort_order: form.sort_order };
+    const op = editing
+      ? supabase.from("keywords").update(payload).eq("id", editing.id)
+      : supabase.from("keywords").insert(payload);
+    const { error } = await op;
+    if (error) toast.error(error.message);
+    else { toast.success("Saved"); setOpen(false); load(); }
+  };
+  const updateSort = async (id: string, sort_order: number) => {
+    const { error } = await supabase.from("keywords").update({ sort_order }).eq("id", id);
+    if (error) toast.error(error.message); else load();
+  };
+  const del = async (id: string) => {
+    if (!confirm("Delete this keyword?")) return;
+    const { error } = await supabase.from("keywords").delete().eq("id", id);
+    if (error) toast.error(error.message); else { toast.success("Deleted"); load(); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center gap-3">
+        <p className="text-xs text-muted-foreground">Keyword chips shown above the search form. Lower order numbers appear first.</p>
+        <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> New keyword</Button>
+      </div>
+      <div className="border rounded-lg bg-card">
+        <Table>
+          <TableHeader><TableRow>
+            <TableHead>Label</TableHead><TableHead>URL</TableHead><TableHead className="w-28">Order</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {items.map((k) => (
+              <TableRow key={k.id}>
+                <TableCell className="font-medium">{k.label}</TableCell>
+                <TableCell className="max-w-xs truncate text-muted-foreground">
+                  <a href={k.affiliate_url} target="_blank" rel="noopener noreferrer" className="hover:underline">{k.affiliate_url}</a>
+                </TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    className="h-8 w-20"
+                    defaultValue={k.sort_order}
+                    onBlur={(e) => {
+                      const v = Number(e.target.value);
+                      if (v !== k.sort_order) updateSort(k.id, v);
+                    }}
+                  />
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(k)}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => del(k.id)}><Trash2 className="h-4 w-4" /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {items.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No keywords yet</TableCell></TableRow>}
+          </TableBody>
+        </Table>
+      </div>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editing ? "Edit" : "New"} keyword</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Label</Label>
+              <Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="Giftable tech under $30" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Affiliate URL</Label>
+              <Input value={form.affiliate_url} onChange={(e) => setForm({ ...form, affiliate_url: e.target.value })} placeholder="https://amazon.com/..." />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Order</Label>
+              <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
             </div>
           </div>
           <DialogFooter><Button onClick={save}>Save</Button></DialogFooter>

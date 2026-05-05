@@ -115,6 +115,30 @@ export type Database = {
         }
         Relationships: []
       }
+      keywords: {
+        Row: {
+          affiliate_url: string
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          affiliate_url: string
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          affiliate_url?: string
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       price_tiers: {
         Row: {
           created_at: string

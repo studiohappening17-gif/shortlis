@@ -15,12 +15,14 @@ export const Route = createFileRoute("/")({
 
 type Tier = { id: string; label: string; value: string; sort_order: number };
 type Dept = { id: string; name: string };
+type Keyword = { id: string; label: string; affiliate_url: string };
 
 function HomePage() {
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [discountTiers, setDiscountTiers] = useState<Tier[]>([]);
   const [priceTiers, setPriceTiers] = useState<Tier[]>([]);
   const [reviewTiers, setReviewTiers] = useState<Tier[]>([]);
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [dept, setDept] = useState("any");
   const [discount, setDiscount] = useState("any");
   const [price, setPrice] = useState("any");
@@ -34,11 +36,13 @@ function HomePage() {
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
       supabase.from("review_tiers").select("*").order("sort_order"),
-    ]).then(([d, dt, pt, rt]) => {
+      supabase.from("keywords").select("id,label,affiliate_url").order("sort_order"),
+    ]).then(([d, dt, pt, rt, kw]) => {
       setDepartments(d.data ?? []);
       setDiscountTiers(dt.data ?? []);
       setPriceTiers(pt.data ?? []);
       setReviewTiers(rt.data ?? []);
+      setKeywords(kw.data ?? []);
       // ensure first option selected
       if (dt.data?.length) setDiscount(dt.data[0].value);
       if (pt.data?.length) setPrice(pt.data[0].value);
@@ -101,6 +105,24 @@ function HomePage() {
             </span>
           </div>
         </header>
+
+        {keywords.length > 0 && (
+          <div className="mb-8 rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-5 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              {keywords.map((k) => (
+                <a
+                  key={k.id}
+                  href={k.affiliate_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-[14px] border border-border bg-card px-4 py-3 text-sm font-medium text-foreground/80 text-center transition-all hover:border-amazon hover:shadow-sm hover:text-foreground"
+                >
+                  {k.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8 space-y-6">
           {/* Department */}
