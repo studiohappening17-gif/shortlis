@@ -106,6 +106,24 @@ function HomePage() {
           </div>
         </header>
 
+        {keywords.length > 0 && (
+          <div className="mb-8 rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-5 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              {keywords.map((k) => (
+                <a
+                  key={k.id}
+                  href={k.affiliate_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-[14px] border border-border bg-card px-4 py-3 text-sm font-medium text-foreground/80 text-center transition-all hover:border-amazon hover:shadow-sm hover:text-foreground"
+                >
+                  {k.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8 space-y-6">
           {/* Department */}
           <div className="space-y-3">
