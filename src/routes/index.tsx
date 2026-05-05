@@ -180,7 +180,7 @@ function ChipGroup({
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-foreground/80">{label}</label>
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+      <div className={cn("grid gap-2 sm:gap-3", tiers.length <= 2 ? "grid-cols-2" : "grid-cols-3 sm:grid-cols-5")}>
         {tiers.map((t) => {
           const selected = value === t.value;
           return (
