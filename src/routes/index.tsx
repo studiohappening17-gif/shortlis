@@ -103,21 +103,29 @@ function HomePage() {
 
         <div className="rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8 space-y-6">
           {/* Department */}
-          <div className="space-y-2">
+          <div className="space-y-3">
             <label className="text-sm font-medium text-foreground/80">Department</label>
-            <Select value={dept} onValueChange={setDept} disabled={loading}>
-              <SelectTrigger className="h-12 text-base rounded-[14px] border-border hover:border-amazon focus:border-amazon transition-colors">
-                <SelectValue placeholder="Any" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any</SelectItem>
-                {departments.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
+              {[{ id: "any", name: "Any" }, ...departments].map((d) => {
+                const selected = dept === d.id;
+                return (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => setDept(d.id)}
+                    disabled={loading}
+                    className={cn(
+                      "rounded-[14px] border px-4 py-3 text-sm font-medium transition-all",
+                      selected
+                        ? "border-chip-selected-border bg-chip-selected-bg text-chip-selected-text shadow-sm"
+                        : "border-border bg-card text-foreground/75 hover:border-amazon hover:shadow-sm"
+                    )}
+                  >
                     {d.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Discount */}
