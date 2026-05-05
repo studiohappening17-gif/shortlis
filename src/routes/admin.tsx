@@ -44,6 +44,7 @@ type Link_ = {
   dept_id: string;
   discount_range: string;
   price_range: string;
+  review_range: string;
   affiliate_url: string;
 };
 
