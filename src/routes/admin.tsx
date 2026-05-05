@@ -358,16 +358,19 @@ function SettingsTab() {
   const [fallback, setFallback] = useState("");
   const [discounts, setDiscounts] = useState<Tier[]>([]);
   const [prices, setPrices] = useState<Tier[]>([]);
+  const [reviews, setReviews] = useState<Tier[]>([]);
 
   const load = async () => {
-    const [s, d, p] = await Promise.all([
+    const [s, d, p, r] = await Promise.all([
       supabase.from("app_settings").select("value").eq("key", "fallback_url").maybeSingle(),
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
+      supabase.from("review_tiers").select("*").order("sort_order"),
     ]);
     setFallback(s.data?.value ?? "");
     setDiscounts(d.data ?? []);
     setPrices(p.data ?? []);
+    setReviews(r.data ?? []);
   };
   useEffect(() => { load(); }, []);
 
@@ -389,11 +392,12 @@ function SettingsTab() {
 
       <TierEditor title="Discount tiers" table="discount_tiers" items={discounts} reload={load} />
       <TierEditor title="Price tiers" table="price_tiers" items={prices} reload={load} />
+      <TierEditor title="Review tiers" table="review_tiers" items={reviews} reload={load} />
     </div>
   );
 }
 
-function TierEditor({ title, table, items, reload }: { title: string; table: "discount_tiers" | "price_tiers"; items: Tier[]; reload: () => void }) {
+function TierEditor({ title, table, items, reload }: { title: string; table: "discount_tiers" | "price_tiers" | "review_tiers"; items: Tier[]; reload: () => void }) {
   const [label, setLabel] = useState("");
   const [value, setValue] = useState("");
   const [sort, setSort] = useState(0);
