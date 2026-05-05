@@ -109,10 +109,12 @@ function AdminPage() {
           <TabsList>
             <TabsTrigger value="links">Affiliate Links</TabsTrigger>
             <TabsTrigger value="departments">Departments</TabsTrigger>
+            <TabsTrigger value="keywords">Keywords</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
           <TabsContent value="links" className="mt-6"><LinksTab /></TabsContent>
           <TabsContent value="departments" className="mt-6"><DepartmentsTab /></TabsContent>
+          <TabsContent value="keywords" className="mt-6"><KeywordsTab /></TabsContent>
           <TabsContent value="settings" className="mt-6"><SettingsTab /></TabsContent>
         </Tabs>
       </main>
