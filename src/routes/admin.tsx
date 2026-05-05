@@ -230,7 +230,7 @@ function LinksTab() {
   const load = async () => {
     const [l, d, dt, pt] = await Promise.all([
       supabase.from("affiliate_links").select("*").order("created_at", { ascending: false }),
-      supabase.from("departments").select("id,name").order("name"),
+      supabase.from("departments").select("id,name,sort_order").order("sort_order").order("name"),
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
     ]);
