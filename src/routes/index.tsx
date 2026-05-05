@@ -89,8 +89,14 @@ function HomePage() {
       </div>
 
       <main className="mx-auto max-w-xl px-4 py-12 sm:py-16">
-        <header className="text-center mb-10">
-          <h1 className="text-4xl font-semibold tracking-[-0.02em] text-foreground sm:text-4xl">
+        <header className="mb-10 rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8">
+          <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 mb-5">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+            <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-foreground/70">
+              Curated Amazon Picks
+            </span>
+          </div>
+          <h1 className="text-4xl font-semibold tracking-[-0.02em] text-foreground sm:text-5xl">
             Shortlisted Amazon Deals
           </h1>
           <p className="mt-3 text-base text-muted-foreground">
