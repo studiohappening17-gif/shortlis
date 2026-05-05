@@ -58,13 +58,14 @@ function HomePage() {
       const fallbackUrl = fallback.data?.value ?? "https://www.amazon.com";
 
       let target = fallbackUrl;
-      if (dept !== "any" && discount !== "any" && price !== "any") {
+      if (dept !== "any" && discount !== "any" && price !== "any" && review !== "any") {
         const { data } = await supabase
           .from("affiliate_links")
           .select("affiliate_url")
           .eq("dept_id", dept)
           .eq("discount_range", discount)
           .eq("price_range", price)
+          .eq("review_range", review)
           .maybeSingle();
         if (data?.affiliate_url) target = data.affiliate_url;
       }
