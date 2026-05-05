@@ -99,9 +99,6 @@ function HomePage() {
           <h1 className="text-4xl font-semibold tracking-[-0.02em] text-foreground sm:text-5xl">
             Shortlisted Amazon Deals
           </h1>
-          <p className="mt-3 text-base text-muted-foreground">
-            Filter and explore curated Amazon deals tailored to your search
-          </p>
         </header>
 
         <div className="rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8 space-y-6">
