@@ -126,19 +126,34 @@ function DepartmentsTab() {
   const [name, setName] = useState("");
   const [editing, setEditing] = useState<Dept | null>(null);
   const [editName, setEditName] = useState("");
+  const [editSort, setEditSort] = useState(0);
 
-  const load = () => supabase.from("departments").select("*").order("name").then(({ data }) => setItems(data ?? []));
+  const load = () =>
+    supabase
+      .from("departments")
+      .select("*")
+      .order("sort_order")
+      .order("name")
+      .then(({ data }) => setItems((data as Dept[]) ?? []));
   useEffect(() => { load(); }, []);
 
   const add = async () => {
     if (!name.trim()) return;
-    const { error } = await supabase.from("departments").insert({ name: name.trim() });
+    const nextSort = items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
+    const { error } = await supabase.from("departments").insert({ name: name.trim(), sort_order: nextSort });
     if (error) toast.error(error.message); else { toast.success("Added"); setName(""); load(); }
   };
   const save = async () => {
     if (!editing) return;
-    const { error } = await supabase.from("departments").update({ name: editName.trim() }).eq("id", editing.id);
+    const { error } = await supabase
+      .from("departments")
+      .update({ name: editName.trim(), sort_order: editSort })
+      .eq("id", editing.id);
     if (error) toast.error(error.message); else { toast.success("Saved"); setEditing(null); load(); }
+  };
+  const updateSort = async (id: string, sort_order: number) => {
+    const { error } = await supabase.from("departments").update({ sort_order }).eq("id", id);
+    if (error) toast.error(error.message); else load();
   };
   const del = async (id: string) => {
     if (!confirm("Delete this department? Linked affiliate URLs will also be removed.")) return;
@@ -152,27 +167,48 @@ function DepartmentsTab() {
         <Input placeholder="New department name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
         <Button onClick={add}><Plus className="h-4 w-4 mr-1" /> Add</Button>
       </div>
+      <p className="text-xs text-muted-foreground">Use the Order column to control how departments appear on the homepage (lower numbers first).</p>
       <div className="border rounded-lg bg-card">
         <Table>
-          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead className="w-32 text-right">Actions</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead className="w-28">Order</TableHead><TableHead className="w-32 text-right">Actions</TableHead></TableRow></TableHeader>
           <TableBody>
             {items.map((d) => (
               <TableRow key={d.id}>
                 <TableCell className="font-medium">{d.name}</TableCell>
+                <TableCell>
+                  <Input
+                    type="number"
+                    className="h-8 w-20"
+                    defaultValue={d.sort_order}
+                    onBlur={(e) => {
+                      const v = Number(e.target.value);
+                      if (v !== d.sort_order) updateSort(d.id, v);
+                    }}
+                  />
+                </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => { setEditing(d); setEditName(d.name); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => { setEditing(d); setEditName(d.name); setEditSort(d.sort_order); }}><Pencil className="h-4 w-4" /></Button>
                   <Button variant="ghost" size="icon" onClick={() => del(d.id)}><Trash2 className="h-4 w-4" /></Button>
                 </TableCell>
               </TableRow>
             ))}
-            {items.length === 0 && <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground py-8">No departments yet</TableCell></TableRow>}
+            {items.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">No departments yet</TableCell></TableRow>}
           </TableBody>
         </Table>
       </div>
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit department</DialogTitle></DialogHeader>
-          <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Name</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Order</Label>
+              <Input type="number" value={editSort} onChange={(e) => setEditSort(Number(e.target.value))} />
+            </div>
+          </div>
           <DialogFooter><Button onClick={save}>Save</Button></DialogFooter>
         </DialogContent>
       </Dialog>
