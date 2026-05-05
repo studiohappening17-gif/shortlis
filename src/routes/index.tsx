@@ -20,9 +20,11 @@ function HomePage() {
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [discountTiers, setDiscountTiers] = useState<Tier[]>([]);
   const [priceTiers, setPriceTiers] = useState<Tier[]>([]);
+  const [reviewTiers, setReviewTiers] = useState<Tier[]>([]);
   const [dept, setDept] = useState("any");
   const [discount, setDiscount] = useState("any");
   const [price, setPrice] = useState("any");
+  const [review, setReview] = useState("any");
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
 
@@ -31,13 +33,16 @@ function HomePage() {
       supabase.from("departments").select("id,name").order("sort_order").order("name"),
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
-    ]).then(([d, dt, pt]) => {
+      supabase.from("review_tiers").select("*").order("sort_order"),
+    ]).then(([d, dt, pt, rt]) => {
       setDepartments(d.data ?? []);
       setDiscountTiers(dt.data ?? []);
       setPriceTiers(pt.data ?? []);
+      setReviewTiers(rt.data ?? []);
       // ensure first option selected
       if (dt.data?.length) setDiscount(dt.data[0].value);
       if (pt.data?.length) setPrice(pt.data[0].value);
+      if (rt.data?.length) setReview(rt.data[0].value);
       setLoading(false);
     });
   }, []);
