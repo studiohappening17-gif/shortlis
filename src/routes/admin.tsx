@@ -285,7 +285,7 @@ function LinksTab() {
       <div className="border rounded-lg bg-card">
         <Table>
           <TableHeader><TableRow>
-            <TableHead>Department</TableHead><TableHead>Discount</TableHead><TableHead>Price</TableHead><TableHead>URL</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
+            <TableHead>Department</TableHead><TableHead>Discount</TableHead><TableHead>Price</TableHead><TableHead>Reviews</TableHead><TableHead>URL</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {items.map((l) => (
@@ -293,6 +293,7 @@ function LinksTab() {
                 <TableCell className="font-medium">{deptName(l.dept_id)}</TableCell>
                 <TableCell>{tierLabel(discounts, l.discount_range)}</TableCell>
                 <TableCell>{tierLabel(prices, l.price_range)}</TableCell>
+                <TableCell>{tierLabel(reviews, l.review_range)}</TableCell>
                 <TableCell className="max-w-xs truncate text-muted-foreground"><a href={l.affiliate_url} target="_blank" rel="noopener noreferrer" className="hover:underline">{l.affiliate_url}</a></TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
@@ -300,7 +301,7 @@ function LinksTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {items.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No affiliate links yet</TableCell></TableRow>}
+            {items.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No affiliate links yet</TableCell></TableRow>}
           </TableBody>
         </Table>
       </div>
