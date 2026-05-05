@@ -22,6 +22,7 @@ export type Database = {
           discount_range: string
           id: string
           price_range: string
+          review_range: string
         }
         Insert: {
           affiliate_url: string
@@ -30,6 +31,7 @@ export type Database = {
           discount_range: string
           id?: string
           price_range: string
+          review_range?: string
         }
         Update: {
           affiliate_url?: string
@@ -38,6 +40,7 @@ export type Database = {
           discount_range?: string
           id?: string
           price_range?: string
+          review_range?: string
         }
         Relationships: [
           {
@@ -113,6 +116,30 @@ export type Database = {
         Relationships: []
       }
       price_tiers: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          sort_order: number
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          sort_order?: number
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          sort_order?: number
+          value?: string
+        }
+        Relationships: []
+      }
+      review_tiers: {
         Row: {
           created_at: string
           id: string
