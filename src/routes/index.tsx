@@ -15,12 +15,14 @@ export const Route = createFileRoute("/")({
 
 type Tier = { id: string; label: string; value: string; sort_order: number };
 type Dept = { id: string; name: string };
+type Keyword = { id: string; label: string; affiliate_url: string };
 
 function HomePage() {
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [discountTiers, setDiscountTiers] = useState<Tier[]>([]);
   const [priceTiers, setPriceTiers] = useState<Tier[]>([]);
   const [reviewTiers, setReviewTiers] = useState<Tier[]>([]);
+  const [keywords, setKeywords] = useState<Keyword[]>([]);
   const [dept, setDept] = useState("any");
   const [discount, setDiscount] = useState("any");
   const [price, setPrice] = useState("any");
