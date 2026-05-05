@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
 
 type Tier = { id: string; label: string; value: string; sort_order: number };
 type Dept = { id: string; name: string };
-type Keyword = { id: string; label: string; affiliate_url: string };
+type Keyword = { id: string; label: string; affiliate_url: string; emoji: string | null };
 
 function HomePage() {
   const [departments, setDepartments] = useState<Dept[]>([]);
@@ -36,7 +36,7 @@ function HomePage() {
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
       supabase.from("review_tiers").select("*").order("sort_order"),
-      supabase.from("keywords").select("id,label,affiliate_url").order("sort_order"),
+      supabase.from("keywords").select("id,label,affiliate_url,emoji").order("sort_order"),
     ]).then(([d, dt, pt, rt, kw]) => {
       setDepartments(d.data ?? []);
       setDiscountTiers(dt.data ?? []);
@@ -114,9 +114,10 @@ function HomePage() {
                 href={k.affiliate_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-[14px] border border-border/60 bg-transparent px-4 py-3 text-sm font-medium text-foreground/80 text-center transition-colors hover:border-amazon hover:text-foreground"
+                className="rounded-[14px] border border-border/60 bg-transparent px-4 py-3 text-sm font-medium text-foreground/80 text-center transition-colors hover:border-amazon hover:text-foreground inline-flex items-center justify-center gap-2"
               >
-                {k.label}
+                {k.emoji && <span aria-hidden>{k.emoji}</span>}
+                <span>{k.label}</span>
               </a>
             ))}
           </div>
