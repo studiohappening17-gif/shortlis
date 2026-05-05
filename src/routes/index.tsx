@@ -96,7 +96,7 @@ function HomePage() {
           <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 mt-5">
             <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-foreground/70">
-              Filter and explore curated Amazon deals tailored to your search
+              Unlock curated deals matched to your search
             </span>
           </div>
         </header>
