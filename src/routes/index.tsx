@@ -36,11 +36,13 @@ function HomePage() {
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
       supabase.from("review_tiers").select("*").order("sort_order"),
-    ]).then(([d, dt, pt, rt]) => {
+      supabase.from("keywords").select("id,label,affiliate_url").order("sort_order"),
+    ]).then(([d, dt, pt, rt, kw]) => {
       setDepartments(d.data ?? []);
       setDiscountTiers(dt.data ?? []);
       setPriceTiers(pt.data ?? []);
       setReviewTiers(rt.data ?? []);
+      setKeywords(kw.data ?? []);
       // ensure first option selected
       if (dt.data?.length) setDiscount(dt.data[0].value);
       if (pt.data?.length) setPrice(pt.data[0].value);
