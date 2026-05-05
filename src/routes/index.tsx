@@ -128,13 +128,21 @@ function HomePage() {
             </div>
           </div>
 
-          {/* Discount */}
-          <ChipGroup
-            label="Discount"
-            tiers={discountTiers}
-            value={discount}
-            onChange={setDiscount}
-          />
+          {/* Discount + Reviews */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <ChipGroup
+              label="Discount"
+              tiers={discountTiers}
+              value={discount}
+              onChange={setDiscount}
+            />
+            <ChipGroup
+              label="Reviews"
+              tiers={reviewTiers}
+              value={review}
+              onChange={setReview}
+            />
+          </div>
 
           {/* Price */}
           <ChipGroup label="Price" tiers={priceTiers} value={price} onChange={setPrice} />
