@@ -1,21 +1,35 @@
-## Goal
-Swap the light-mode green accent palette for a soft, light purplish palette. Layout, dark mode, and structure unchanged.
+## Add Keywords Section (admin-managed)
 
-## Changes — `src/styles.css` (`:root` block only)
+### 1. Database
+New migration creating `keywords` table:
+- `id uuid pk default gen_random_uuid()`
+- `label text not null`
+- `affiliate_url text not null`
+- `sort_order int not null default 0`
+- `created_at timestamptz default now()`
 
-Replace these tokens (hue 155 → 295, slightly lighter):
+RLS:
+- Public SELECT (true)
+- Admin ALL (`has_role(auth.uid(),'admin')`)
 
-- `--primary: oklch(0.65 0.13 295)`
-- `--ring: oklch(0.65 0.13 295)`
-- `--amazon: oklch(0.65 0.13 295)` (CTA / search button)
-- `--amazon-hover: oklch(0.58 0.14 295)`
-- `--amazon-foreground: oklch(1 0 0)` (unchanged)
-- `--chip-selected-bg: oklch(0.96 0.04 295)` (soft lavender tint)
-- `--chip-selected-border: oklch(0.65 0.13 295)`
-- `--chip-selected-text: oklch(0.38 0.12 295)` (deep plum for contrast)
+Seed with 4 example rows (Giftable tech under $30, K-beauty products under $20, Mother's Day gift under $30, NYC apartment kitchen finds) using placeholder Amazon URL.
 
-These cascade automatically to: primary buttons, the Search CTA, focus rings, selected chip background/border/text, and hover borders on chips and the department select.
+### 2. Homepage (`src/routes/index.tsx`)
+Between the header card and the search card, render a new card containing keyword chips.
+- Fetch `keywords` (ordered by `sort_order`) in the existing `Promise.all` load.
+- Layout: `grid grid-cols-2 gap-2 sm:gap-3` (4 items → 2x2 on mobile, can stay 2 cols on small screens; switches to `sm:grid-cols-2` for visual consistency with reference). Each chip is a clickable button styled like the existing chip buttons (rounded-[14px] border, hover state) but acts as a link — clicking opens the keyword's `affiliate_url` in a new tab.
+- Section heading: "Trending searches" (or similar) using the same label style as Department/Discount.
+- Style: matches the card shell + chip design tokens already used.
 
-## Out of scope
-- Dark mode palette
-- Page layout, spacing, copy, components
+### 3. Admin panel (`src/routes/admin.tsx`)
+- Add a new tab `"Keywords"` to the TabsList.
+- New `KeywordsTab` component with table (Label, URL, Order, Actions) + Add/Edit dialog (label, URL, sort_order) + delete confirm. Mirrors the structure of `DepartmentsTab` / `LinksTab`.
+- Independent of links — saved via its own table.
+
+### 4. Types
+`src/integrations/supabase/types.ts` will be regenerated automatically after the migration to include the `keywords` table.
+
+### Files touched
+- `supabase/migrations/<timestamp>_keywords.sql` (new)
+- `src/routes/index.tsx`
+- `src/routes/admin.tsx`
