@@ -223,21 +223,24 @@ function LinksTab() {
   const [depts, setDepts] = useState<Dept[]>([]);
   const [discounts, setDiscounts] = useState<Tier[]>([]);
   const [prices, setPrices] = useState<Tier[]>([]);
+  const [reviews, setReviews] = useState<Tier[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Link_ | null>(null);
-  const [form, setForm] = useState({ dept_id: "", discount_range: "", price_range: "", affiliate_url: "" });
+  const [form, setForm] = useState({ dept_id: "", discount_range: "", price_range: "", review_range: "", affiliate_url: "" });
 
   const load = async () => {
-    const [l, d, dt, pt] = await Promise.all([
+    const [l, d, dt, pt, rt] = await Promise.all([
       supabase.from("affiliate_links").select("*").order("created_at", { ascending: false }),
       supabase.from("departments").select("id,name,sort_order").order("sort_order").order("name"),
       supabase.from("discount_tiers").select("*").order("sort_order"),
       supabase.from("price_tiers").select("*").order("sort_order"),
+      supabase.from("review_tiers").select("*").order("sort_order"),
     ]);
-    setItems(l.data ?? []);
+    setItems((l.data as Link_[]) ?? []);
     setDepts(d.data ?? []);
     setDiscounts(dt.data ?? []);
     setPrices(pt.data ?? []);
+    setReviews(rt.data ?? []);
   };
   useEffect(() => { load(); }, []);
 
