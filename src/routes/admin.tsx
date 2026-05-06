@@ -338,7 +338,7 @@ function LinksTab() {
               <Label>Department</Label>
               <Select value={form.dept_id} onValueChange={(v) => setForm({ ...form, dept_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-                <SelectContent>{depts.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="any">Any</SelectItem>{depts.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
