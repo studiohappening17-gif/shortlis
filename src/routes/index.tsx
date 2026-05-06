@@ -62,15 +62,14 @@ function HomePage() {
       const globalFallback = fallback.data?.value ?? "https://www.amazon.com";
 
       let target: string | null = null;
-      if (dept !== "any" && discount !== "any" && price !== "any" && review !== "any") {
-        const { data } = await supabase
+      if (discount !== "any" && price !== "any" && review !== "any") {
+        const q = supabase
           .from("affiliate_links")
           .select("affiliate_url")
-          .eq("dept_id", dept)
           .eq("discount_range", discount)
           .eq("price_range", price)
-          .eq("review_range", review)
-          .maybeSingle();
+          .eq("review_range", review);
+        const { data } = await (dept !== "any" ? q.eq("dept_id", dept) : q.is("dept_id", null)).maybeSingle();
         if (data?.affiliate_url) target = data.affiliate_url;
       }
 
