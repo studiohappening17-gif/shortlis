@@ -37,7 +37,7 @@ export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type Dept = { id: string; name: string; sort_order: number };
+type Dept = { id: string; name: string; sort_order: number; default_affiliate_url: string | null };
 type Tier = { id: string; label: string; value: string; sort_order: number };
 type Link_ = {
   id: string;
