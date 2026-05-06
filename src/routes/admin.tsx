@@ -275,7 +275,7 @@ function LinksTab() {
   };
   const openEdit = (l: Link_) => {
     setEditing(l);
-    setForm({ dept_id: l.dept_id, discount_range: l.discount_range, price_range: l.price_range, review_range: l.review_range ?? "any", affiliate_url: l.affiliate_url });
+    setForm({ dept_id: l.dept_id ?? "any", discount_range: l.discount_range, price_range: l.price_range, review_range: l.review_range ?? "any", affiliate_url: l.affiliate_url });
     setOpen(true);
   };
 
