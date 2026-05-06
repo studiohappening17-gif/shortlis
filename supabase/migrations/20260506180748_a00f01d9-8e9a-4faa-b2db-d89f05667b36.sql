@@ -1,0 +1,2 @@
+ALTER TABLE public.affiliate_links DROP CONSTRAINT IF EXISTS affiliate_links_dept_id_discount_range_price_range_key;
+ALTER TABLE public.affiliate_links ADD CONSTRAINT affiliate_links_dept_discount_price_review_key UNIQUE (dept_id, discount_range, price_range, review_range);
