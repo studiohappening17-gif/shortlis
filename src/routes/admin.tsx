@@ -284,9 +284,10 @@ function LinksTab() {
       toast.error("Fill all fields");
       return;
     }
+    const payload = { ...form, dept_id: form.dept_id === "any" ? null : form.dept_id };
     const op = editing
-      ? supabase.from("affiliate_links").update(form).eq("id", editing.id)
-      : supabase.from("affiliate_links").insert(form);
+      ? supabase.from("affiliate_links").update(payload).eq("id", editing.id)
+      : supabase.from("affiliate_links").insert(payload);
     const { error } = await op;
     if (error) toast.error(error.message);
     else { toast.success("Saved"); setOpen(false); load(); }
