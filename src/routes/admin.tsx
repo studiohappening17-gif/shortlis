@@ -41,7 +41,7 @@ type Dept = { id: string; name: string; sort_order: number; default_affiliate_ur
 type Tier = { id: string; label: string; value: string; sort_order: number };
 type Link_ = {
   id: string;
-  dept_id: string;
+  dept_id: string | null;
   discount_range: string;
   price_range: string;
   review_range: string;
