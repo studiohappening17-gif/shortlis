@@ -298,7 +298,7 @@ function LinksTab() {
     if (error) toast.error(error.message); else { toast.success("Deleted"); load(); }
   };
 
-  const deptName = (id: string) => depts.find((d) => d.id === id)?.name ?? "—";
+  const deptName = (id: string | null) => (id ? depts.find((d) => d.id === id)?.name ?? "—" : "Any");
   const tierLabel = (tiers: Tier[], v: string) => tiers.find((t) => t.value === v)?.label ?? v;
 
   return (
