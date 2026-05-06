@@ -1,0 +1,1 @@
+ALTER TABLE public.affiliate_links ALTER COLUMN dept_id DROP NOT NULL;
