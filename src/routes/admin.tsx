@@ -1,7 +1,25 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Loader2, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import type { Session } from "@supabase/supabase-js";
+
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import {
+  confirmAndDelete,
+  fetchAffiliateLinks,
+  fetchDepartments,
+  fetchFallbackUrl,
+  fetchKeywords,
+  fetchTiers,
+  runMutation,
+  upsertFallbackUrl,
+} from "@/lib/admin-api";
+import { useResource } from "@/hooks/useResource";
+import type { AffiliateLink, Department, Keyword, Tier, TierTable } from "@/lib/types";
+
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +37,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Table,
@@ -29,24 +46,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { toast } from "sonner";
-import { Loader2, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
 });
 
-type Dept = { id: string; name: string; sort_order: number; default_affiliate_url: string | null };
-type Tier = { id: string; label: string; value: string; sort_order: number };
-type Link_ = {
-  id: string;
-  dept_id: string | null;
-  discount_range: string;
-  price_range: string;
-  review_range: string;
-  affiliate_url: string;
-};
+/* ============================================================
+   Page shell
+   ============================================================ */
 
 function AdminPage() {
   const { session, isAdmin, loading } = useAuth();
@@ -65,173 +72,275 @@ function AdminPage() {
   }
 
   if (!session) return null;
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <h1 className="text-2xl font-bold">Access denied</h1>
-          <p className="mt-2 text-muted-foreground">
-            You're signed in as {session.user.email} but don't have admin access. Ask the project
-            owner to grant you the <code className="bg-muted px-1.5 py-0.5 rounded">admin</code>{" "}
-            role.
-          </p>
-          <p className="mt-3 text-xs text-muted-foreground break-all">User ID: {session.user.id}</p>
-          <div className="mt-6 flex gap-2 justify-center">
-            <Button variant="outline" onClick={() => supabase.auth.signOut()}>Sign out</Button>
-            <Link to="/"><Button variant="ghost">Home</Button></Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!isAdmin) return <AccessDenied session={session} />;
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold">Admin Dashboard</h1>
-            <p className="text-xs text-muted-foreground">{session.user.email}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/"><Button variant="ghost" size="sm">View site</Button></Link>
-            <ThemeToggle />
-            <Button variant="outline" size="sm" onClick={() => supabase.auth.signOut().then(() => navigate({ to: "/login" }))}>
-              <LogOut className="h-4 w-4 mr-1.5" /> Sign out
-            </Button>
-          </div>
-        </div>
-      </header>
-
+      <AdminHeader session={session} onSignOut={() => navigate({ to: "/login" })} />
       <main className="mx-auto max-w-6xl px-4 py-8">
-        <Tabs defaultValue="links">
-          <TabsList>
-            <TabsTrigger value="links">Affiliate Links</TabsTrigger>
-            <TabsTrigger value="departments">Departments</TabsTrigger>
-            <TabsTrigger value="keywords">Keywords</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
-          </TabsList>
-          <TabsContent value="links" className="mt-6"><LinksTab /></TabsContent>
-          <TabsContent value="departments" className="mt-6"><DepartmentsTab /></TabsContent>
-          <TabsContent value="keywords" className="mt-6"><KeywordsTab /></TabsContent>
-          <TabsContent value="settings" className="mt-6"><SettingsTab /></TabsContent>
-        </Tabs>
+        <AdminTabs />
       </main>
     </div>
   );
 }
 
-/* ---------- Departments ---------- */
+const AccessDenied = ({ session }: { session: Session }) => (
+  <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="text-center max-w-md">
+      <h1 className="text-2xl font-bold">Access denied</h1>
+      <p className="mt-2 text-muted-foreground">
+        You're signed in as {session.user.email} but don't have admin access. Ask the project
+        owner to grant you the <code className="bg-muted px-1.5 py-0.5 rounded">admin</code> role.
+      </p>
+      <p className="mt-3 text-xs text-muted-foreground break-all">User ID: {session.user.id}</p>
+      <div className="mt-6 flex gap-2 justify-center">
+        <Button variant="outline" onClick={() => supabase.auth.signOut()}>Sign out</Button>
+        <Link to="/"><Button variant="ghost">Home</Button></Link>
+      </div>
+    </div>
+  </div>
+);
+
+const AdminHeader = ({ session, onSignOut }: { session: Session; onSignOut: () => void }) => (
+  <header className="border-b bg-card">
+    <div className="mx-auto max-w-6xl px-4 py-4 flex items-center justify-between">
+      <div>
+        <h1 className="text-xl font-bold">Admin Dashboard</h1>
+        <p className="text-xs text-muted-foreground">{session.user.email}</p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Link to="/"><Button variant="ghost" size="sm">View site</Button></Link>
+        <ThemeToggle />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => supabase.auth.signOut().then(onSignOut)}
+        >
+          <LogOut className="h-4 w-4 mr-1.5" /> Sign out
+        </Button>
+      </div>
+    </div>
+  </header>
+);
+
+const AdminTabs = () => (
+  <Tabs defaultValue="links">
+    <TabsList>
+      <TabsTrigger value="links">Affiliate Links</TabsTrigger>
+      <TabsTrigger value="departments">Departments</TabsTrigger>
+      <TabsTrigger value="keywords">Keywords</TabsTrigger>
+      <TabsTrigger value="settings">Settings</TabsTrigger>
+    </TabsList>
+    <TabsContent value="links" className="mt-6"><LinksTab /></TabsContent>
+    <TabsContent value="departments" className="mt-6"><DepartmentsTab /></TabsContent>
+    <TabsContent value="keywords" className="mt-6"><KeywordsTab /></TabsContent>
+    <TabsContent value="settings" className="mt-6"><SettingsTab /></TabsContent>
+  </Tabs>
+);
+
+/* ============================================================
+   Shared row primitives
+   ============================================================ */
+
+const RowActions = ({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) => (
+  <>
+    <Button variant="ghost" size="icon" onClick={onEdit}><Pencil className="h-4 w-4" /></Button>
+    <Button variant="ghost" size="icon" onClick={onDelete}><Trash2 className="h-4 w-4" /></Button>
+  </>
+);
+
+const EmptyRow = ({ colSpan, label }: { colSpan: number; label: string }) => (
+  <TableRow>
+    <TableCell colSpan={colSpan} className="text-center text-muted-foreground py-8">
+      {label}
+    </TableCell>
+  </TableRow>
+);
+
+type SortInputProps = { value: number; onCommit: (v: number) => void };
+const SortInput = ({ value, onCommit }: SortInputProps) => (
+  <Input
+    type="number"
+    className="h-8 w-20"
+    defaultValue={value}
+    onBlur={(e) => {
+      const v = Number(e.target.value);
+      if (v !== value) onCommit(v);
+    }}
+  />
+);
+
+type UrlCellInputProps = { value: string; onCommit: (v: string) => void; placeholder?: string };
+const UrlCellInput = ({ value, onCommit, placeholder }: UrlCellInputProps) => (
+  <Input
+    placeholder={placeholder}
+    className="h-8"
+    defaultValue={value}
+    onBlur={(e) => {
+      const v = e.target.value.trim();
+      if (v !== value) onCommit(v);
+    }}
+  />
+);
+
+const ExternalLink = ({ href }: { href: string }) => (
+  <a href={href} target="_blank" rel="noopener noreferrer" className="hover:underline">
+    {href}
+  </a>
+);
+
+/* ============================================================
+   Departments tab
+   ============================================================ */
 
 function DepartmentsTab() {
-  const [items, setItems] = useState<Dept[]>([]);
+  const { items, reload } = useResource<Department[]>(fetchDepartments, []);
   const [name, setName] = useState("");
-  const [editing, setEditing] = useState<Dept | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editSort, setEditSort] = useState(0);
-
-  const load = () =>
-    supabase
-      .from("departments")
-      .select("*")
-      .order("sort_order")
-      .order("name")
-      .then(({ data }) => setItems((data as Dept[]) ?? []));
-  useEffect(() => { load(); }, []);
+  const [editing, setEditing] = useState<Department | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", sort_order: 0, url: "" });
 
   const add = async () => {
     if (!name.trim()) return;
     const nextSort = items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
-    const { error } = await supabase.from("departments").insert({ name: name.trim(), sort_order: nextSort });
-    if (error) toast.error(error.message); else { toast.success("Added"); setName(""); load(); }
+    const { ok } = await runMutation(
+      supabase.from("departments").insert({ name: name.trim(), sort_order: nextSort }),
+      { successMsg: "Added" },
+    );
+    if (ok) {
+      setName("");
+      reload();
+    }
   };
-  const [editUrl, setEditUrl] = useState("");
+
   const save = async () => {
     if (!editing) return;
-    const { error } = await supabase
-      .from("departments")
-      .update({ name: editName.trim(), sort_order: editSort, default_affiliate_url: editUrl.trim() || null })
-      .eq("id", editing.id);
-    if (error) toast.error(error.message); else { toast.success("Saved"); setEditing(null); load(); }
+    const { ok } = await runMutation(
+      supabase
+        .from("departments")
+        .update({
+          name: editForm.name.trim(),
+          sort_order: editForm.sort_order,
+          default_affiliate_url: editForm.url.trim() || null,
+        })
+        .eq("id", editing.id),
+      { successMsg: "Saved" },
+    );
+    if (ok) {
+      setEditing(null);
+      reload();
+    }
   };
+
   const updateSort = async (id: string, sort_order: number) => {
-    const { error } = await supabase.from("departments").update({ sort_order }).eq("id", id);
-    if (error) toast.error(error.message); else load();
+    const { ok } = await runMutation(
+      supabase.from("departments").update({ sort_order }).eq("id", id),
+    );
+    if (ok) reload();
   };
-  const updateDefaultUrl = async (id: string, default_affiliate_url: string) => {
-    const { error } = await supabase.from("departments").update({ default_affiliate_url: default_affiliate_url || null }).eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Saved"); load(); }
+
+  const updateDefaultUrl = async (id: string, url: string) => {
+    const { ok } = await runMutation(
+      supabase.from("departments").update({ default_affiliate_url: url || null }).eq("id", id),
+      { successMsg: "Saved" },
+    );
+    if (ok) reload();
   };
+
   const del = async (id: string) => {
-    if (!confirm("Delete this department? Linked affiliate URLs will also be removed.")) return;
-    const { error } = await supabase.from("departments").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); load(); }
+    const ok = await confirmAndDelete(
+      "departments",
+      id,
+      "Delete this department? Linked affiliate URLs will also be removed.",
+    );
+    if (ok) reload();
+  };
+
+  const startEdit = (d: Department) => {
+    setEditing(d);
+    setEditForm({
+      name: d.name,
+      sort_order: d.sort_order,
+      url: d.default_affiliate_url ?? "",
+    });
   };
 
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <Input placeholder="New department name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} />
+        <Input
+          placeholder="New department name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+        />
         <Button onClick={add}><Plus className="h-4 w-4 mr-1" /> Add</Button>
       </div>
-      <p className="text-xs text-muted-foreground">Set a Default Affiliate Link per department — used as a fallback when no specific link matches the user's filters.</p>
+      <p className="text-xs text-muted-foreground">
+        Set a Default Affiliate Link per department — used as a fallback when no specific link
+        matches the user's filters.
+      </p>
+
       <div className="border rounded-lg bg-card">
         <Table>
-          <TableHeader><TableRow><TableHead>Name</TableHead><TableHead className="w-24">Order</TableHead><TableHead>Default Affiliate Link</TableHead><TableHead className="w-32 text-right">Actions</TableHead></TableRow></TableHeader>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead className="w-24">Order</TableHead>
+              <TableHead>Default Affiliate Link</TableHead>
+              <TableHead className="w-32 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
             {items.map((d) => (
               <TableRow key={d.id}>
                 <TableCell className="font-medium">{d.name}</TableCell>
                 <TableCell>
-                  <Input
-                    type="number"
-                    className="h-8 w-20"
-                    defaultValue={d.sort_order}
-                    onBlur={(e) => {
-                      const v = Number(e.target.value);
-                      if (v !== d.sort_order) updateSort(d.id, v);
-                    }}
-                  />
+                  <SortInput value={d.sort_order} onCommit={(v) => updateSort(d.id, v)} />
                 </TableCell>
                 <TableCell>
-                  <Input
+                  <UrlCellInput
+                    value={d.default_affiliate_url ?? ""}
                     placeholder="https://amazon.com/..."
-                    className="h-8"
-                    defaultValue={d.default_affiliate_url ?? ""}
-                    onBlur={(e) => {
-                      const v = e.target.value.trim();
-                      if (v !== (d.default_affiliate_url ?? "")) updateDefaultUrl(d.id, v);
-                    }}
+                    onCommit={(v) => updateDefaultUrl(d.id, v)}
                   />
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => { setEditing(d); setEditName(d.name); setEditSort(d.sort_order); setEditUrl(d.default_affiliate_url ?? ""); }}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => del(d.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <RowActions onEdit={() => startEdit(d)} onDelete={() => del(d.id)} />
                 </TableCell>
               </TableRow>
             ))}
-            {items.length === 0 && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No departments yet</TableCell></TableRow>}
+            {items.length === 0 && <EmptyRow colSpan={4} label="No departments yet" />}
           </TableBody>
         </Table>
       </div>
+
       <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent>
           <DialogHeader><DialogTitle>Edit department</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1.5">
-              <Label>Name</Label>
-              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Order</Label>
-              <Input type="number" value={editSort} onChange={(e) => setEditSort(Number(e.target.value))} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Default Affiliate Link</Label>
-              <Input placeholder="https://amazon.com/..." value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
-              <p className="text-xs text-muted-foreground">Used when a user's filter combination has no specific affiliate link.</p>
-            </div>
+            <Field label="Name">
+              <Input
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </Field>
+            <Field label="Order">
+              <Input
+                type="number"
+                value={editForm.sort_order}
+                onChange={(e) => setEditForm({ ...editForm, sort_order: Number(e.target.value) })}
+              />
+            </Field>
+            <Field
+              label="Default Affiliate Link"
+              hint="Used when a user's filter combination has no specific affiliate link."
+            >
+              <Input
+                placeholder="https://amazon.com/..."
+                value={editForm.url}
+                onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
+              />
+            </Field>
           </div>
           <DialogFooter><Button onClick={save}>Save</Button></DialogFooter>
         </DialogContent>
@@ -240,47 +349,99 @@ function DepartmentsTab() {
   );
 }
 
-/* ---------- Links ---------- */
+const Field = ({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) => (
+  <div className="space-y-1.5">
+    <Label>{label}</Label>
+    {children}
+    {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+  </div>
+);
+
+/* ============================================================
+   Affiliate links tab
+   ============================================================ */
+
+type LinkForm = {
+  dept_id: string;
+  discount_range: string;
+  price_range: string;
+  review_range: string;
+  affiliate_url: string;
+};
+
+const EMPTY_LINK_FORM: LinkForm = {
+  dept_id: "",
+  discount_range: "",
+  price_range: "",
+  review_range: "",
+  affiliate_url: "",
+};
 
 function LinksTab() {
-  const [items, setItems] = useState<Link_[]>([]);
-  const [depts, setDepts] = useState<Dept[]>([]);
+  const [items, setItems] = useState<AffiliateLink[]>([]);
+  const [depts, setDepts] = useState<Department[]>([]);
   const [discounts, setDiscounts] = useState<Tier[]>([]);
   const [prices, setPrices] = useState<Tier[]>([]);
   const [reviews, setReviews] = useState<Tier[]>([]);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Link_ | null>(null);
-  const [form, setForm] = useState({ dept_id: "", discount_range: "", price_range: "", review_range: "", affiliate_url: "" });
+  const [editing, setEditing] = useState<AffiliateLink | null>(null);
+  const [form, setForm] = useState<LinkForm>(EMPTY_LINK_FORM);
 
-  const load = async () => {
-    const [l, d, dt, pt, rt] = await Promise.all([
-      supabase.from("affiliate_links").select("*").order("created_at", { ascending: false }),
-      supabase.from("departments").select("id,name,sort_order,default_affiliate_url").order("sort_order").order("name"),
-      supabase.from("discount_tiers").select("*").order("sort_order"),
-      supabase.from("price_tiers").select("*").order("sort_order"),
-      supabase.from("review_tiers").select("*").order("sort_order"),
+  const load = useCallback(async () => {
+    const [links, departments, d, p, r] = await Promise.all([
+      fetchAffiliateLinks(),
+      fetchDepartments(),
+      fetchTiers("discount_tiers"),
+      fetchTiers("price_tiers"),
+      fetchTiers("review_tiers"),
     ]);
-    setItems((l.data as Link_[]) ?? []);
-    setDepts(d.data ?? []);
-    setDiscounts(dt.data ?? []);
-    setPrices(pt.data ?? []);
-    setReviews(rt.data ?? []);
-  };
-  useEffect(() => { load(); }, []);
+    setItems(links);
+    setDepts(departments);
+    setDiscounts(d);
+    setPrices(p);
+    setReviews(r);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const deptMap = useMemo(() => new Map(depts.map((d) => [d.id, d.name])), [depts]);
+  const tierMaps = useMemo(
+    () => ({
+      discount: new Map(discounts.map((t) => [t.value, t.label])),
+      price: new Map(prices.map((t) => [t.value, t.label])),
+      review: new Map(reviews.map((t) => [t.value, t.label])),
+    }),
+    [discounts, prices, reviews],
+  );
+
+  const deptName = (id: string | null) => (id ? deptMap.get(id) ?? "—" : "Any");
 
   const openAdd = () => {
     setEditing(null);
-    setForm({ dept_id: "", discount_range: "", price_range: "", review_range: "", affiliate_url: "" });
+    setForm(EMPTY_LINK_FORM);
     setOpen(true);
   };
-  const openEdit = (l: Link_) => {
+
+  const openEdit = (l: AffiliateLink) => {
     setEditing(l);
-    setForm({ dept_id: l.dept_id ?? "any", discount_range: l.discount_range, price_range: l.price_range, review_range: l.review_range ?? "any", affiliate_url: l.affiliate_url });
+    setForm({
+      dept_id: l.dept_id ?? "any",
+      discount_range: l.discount_range,
+      price_range: l.price_range,
+      review_range: l.review_range ?? "any",
+      affiliate_url: l.affiliate_url,
+    });
     setOpen(true);
   };
 
   const save = async () => {
-    if (!form.dept_id || !form.discount_range || !form.price_range || !form.review_range || !form.affiliate_url) {
+    if (
+      !form.dept_id ||
+      !form.discount_range ||
+      !form.price_range ||
+      !form.review_range ||
+      !form.affiliate_url
+    ) {
       toast.error("Fill all fields");
       return;
     }
@@ -288,207 +449,302 @@ function LinksTab() {
     const op = editing
       ? supabase.from("affiliate_links").update(payload).eq("id", editing.id)
       : supabase.from("affiliate_links").insert(payload);
-    const { error } = await op;
-    if (error) toast.error(error.message);
-    else { toast.success("Saved"); setOpen(false); load(); }
-  };
-  const del = async (id: string) => {
-    if (!confirm("Delete this link?")) return;
-    const { error } = await supabase.from("affiliate_links").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); load(); }
+    const { ok } = await runMutation(op, { successMsg: "Saved" });
+    if (ok) {
+      setOpen(false);
+      load();
+    }
   };
 
-  const deptName = (id: string | null) => (id ? depts.find((d) => d.id === id)?.name ?? "—" : "Any");
-  const tierLabel = (tiers: Tier[], v: string) => tiers.find((t) => t.value === v)?.label ?? v;
+  const del = async (id: string) => {
+    if (await confirmAndDelete("affiliate_links", id, "Delete this link?")) load();
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
         <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> New link</Button>
       </div>
+
       <div className="border rounded-lg bg-card">
         <Table>
-          <TableHeader><TableRow>
-            <TableHead>Department</TableHead><TableHead>Discount</TableHead><TableHead>Price</TableHead><TableHead>Reviews</TableHead><TableHead>URL</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
-          </TableRow></TableHeader>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Department</TableHead>
+              <TableHead>Discount</TableHead>
+              <TableHead>Price</TableHead>
+              <TableHead>Reviews</TableHead>
+              <TableHead>URL</TableHead>
+              <TableHead className="w-32 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
             {items.map((l) => (
               <TableRow key={l.id}>
                 <TableCell className="font-medium">{deptName(l.dept_id)}</TableCell>
-                <TableCell>{tierLabel(discounts, l.discount_range)}</TableCell>
-                <TableCell>{tierLabel(prices, l.price_range)}</TableCell>
-                <TableCell>{tierLabel(reviews, l.review_range)}</TableCell>
-                <TableCell className="max-w-xs truncate text-muted-foreground"><a href={l.affiliate_url} target="_blank" rel="noopener noreferrer" className="hover:underline">{l.affiliate_url}</a></TableCell>
+                <TableCell>{tierMaps.discount.get(l.discount_range) ?? l.discount_range}</TableCell>
+                <TableCell>{tierMaps.price.get(l.price_range) ?? l.price_range}</TableCell>
+                <TableCell>{tierMaps.review.get(l.review_range) ?? l.review_range}</TableCell>
+                <TableCell className="max-w-xs truncate text-muted-foreground">
+                  <ExternalLink href={l.affiliate_url} />
+                </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(l)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => del(l.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <RowActions onEdit={() => openEdit(l)} onDelete={() => del(l.id)} />
                 </TableCell>
               </TableRow>
             ))}
-            {items.length === 0 && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No affiliate links yet</TableCell></TableRow>}
+            {items.length === 0 && <EmptyRow colSpan={6} label="No affiliate links yet" />}
           </TableBody>
         </Table>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Edit" : "New"} affiliate link</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Department</Label>
-              <Select value={form.dept_id} onValueChange={(v) => setForm({ ...form, dept_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-                <SelectContent><SelectItem value="any">Any</SelectItem>{depts.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>Discount</Label>
-                <Select value={form.discount_range} onValueChange={(v) => setForm({ ...form, discount_range: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{discounts.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Price</Label>
-                <Select value={form.price_range} onValueChange={(v) => setForm({ ...form, price_range: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{prices.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Reviews</Label>
-                <Select value={form.review_range} onValueChange={(v) => setForm({ ...form, review_range: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{reviews.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Affiliate URL</Label>
-              <Input placeholder="https://amazon.com/..." value={form.affiliate_url} onChange={(e) => setForm({ ...form, affiliate_url: e.target.value })} />
-            </div>
-          </div>
-          <DialogFooter><Button onClick={save}>Save</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LinkFormDialog
+        open={open}
+        editing={editing}
+        form={form}
+        depts={depts}
+        discounts={discounts}
+        prices={prices}
+        reviews={reviews}
+        onChange={setForm}
+        onOpenChange={setOpen}
+        onSave={save}
+      />
     </div>
   );
 }
 
-/* ---------- Keywords ---------- */
+type LinkFormDialogProps = {
+  open: boolean;
+  editing: AffiliateLink | null;
+  form: LinkForm;
+  depts: Department[];
+  discounts: Tier[];
+  prices: Tier[];
+  reviews: Tier[];
+  onChange: (f: LinkForm) => void;
+  onOpenChange: (open: boolean) => void;
+  onSave: () => void;
+};
 
-type Keyword = { id: string; label: string; affiliate_url: string; sort_order: number; emoji: string | null };
+const LinkFormDialog = ({
+  open,
+  editing,
+  form,
+  depts,
+  discounts,
+  prices,
+  reviews,
+  onChange,
+  onOpenChange,
+  onSave,
+}: LinkFormDialogProps) => {
+  const patch = (p: Partial<LinkForm>) => onChange({ ...form, ...p });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{editing ? "Edit" : "New"} affiliate link</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Field label="Department">
+            <Select value={form.dept_id} onValueChange={(v) => patch({ dept_id: v })}>
+              <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any</SelectItem>
+                {depts.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <TierSelect label="Discount" tiers={discounts} value={form.discount_range}
+              onChange={(v) => patch({ discount_range: v })} />
+            <TierSelect label="Price" tiers={prices} value={form.price_range}
+              onChange={(v) => patch({ price_range: v })} />
+            <TierSelect label="Reviews" tiers={reviews} value={form.review_range}
+              onChange={(v) => patch({ review_range: v })} />
+          </div>
+          <Field label="Affiliate URL">
+            <Input
+              placeholder="https://amazon.com/..."
+              value={form.affiliate_url}
+              onChange={(e) => patch({ affiliate_url: e.target.value })}
+            />
+          </Field>
+        </div>
+        <DialogFooter><Button onClick={onSave}>Save</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const TierSelect = ({
+  label,
+  tiers,
+  value,
+  onChange,
+}: {
+  label: string;
+  tiers: Tier[];
+  value: string;
+  onChange: (v: string) => void;
+}) => (
+  <Field label={label}>
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+      <SelectContent>
+        {tiers.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}
+      </SelectContent>
+    </Select>
+  </Field>
+);
+
+/* ============================================================
+   Keywords tab
+   ============================================================ */
+
+type KeywordForm = {
+  label: string;
+  affiliate_url: string;
+  sort_order: number;
+  emoji: string;
+};
+
+const EMPTY_KEYWORD_FORM: KeywordForm = { label: "", affiliate_url: "", sort_order: 0, emoji: "" };
 
 function KeywordsTab() {
-  const [items, setItems] = useState<Keyword[]>([]);
+  const { items, reload } = useResource<Keyword[]>(fetchKeywords, []);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Keyword | null>(null);
-  const [form, setForm] = useState({ label: "", affiliate_url: "", sort_order: 0, emoji: "" });
-
-  const load = () =>
-    supabase
-      .from("keywords")
-      .select("*")
-      .order("sort_order")
-      .then(({ data }) => setItems((data as Keyword[]) ?? []));
-  useEffect(() => { load(); }, []);
+  const [form, setForm] = useState<KeywordForm>(EMPTY_KEYWORD_FORM);
 
   const openAdd = () => {
     setEditing(null);
     const nextSort = items.length ? Math.max(...items.map((i) => i.sort_order)) + 1 : 0;
-    setForm({ label: "", affiliate_url: "", sort_order: nextSort, emoji: "" });
+    setForm({ ...EMPTY_KEYWORD_FORM, sort_order: nextSort });
     setOpen(true);
   };
+
   const openEdit = (k: Keyword) => {
     setEditing(k);
-    setForm({ label: k.label, affiliate_url: k.affiliate_url, sort_order: k.sort_order, emoji: k.emoji ?? "" });
+    setForm({
+      label: k.label,
+      affiliate_url: k.affiliate_url,
+      sort_order: k.sort_order,
+      emoji: k.emoji ?? "",
+    });
     setOpen(true);
   };
+
   const save = async () => {
     if (!form.label.trim() || !form.affiliate_url.trim()) {
       toast.error("Fill all fields");
       return;
     }
-    const payload = { label: form.label.trim(), affiliate_url: form.affiliate_url.trim(), sort_order: form.sort_order, emoji: form.emoji.trim() || null };
+    const payload = {
+      label: form.label.trim(),
+      affiliate_url: form.affiliate_url.trim(),
+      sort_order: form.sort_order,
+      emoji: form.emoji.trim() || null,
+    };
     const op = editing
       ? supabase.from("keywords").update(payload).eq("id", editing.id)
       : supabase.from("keywords").insert(payload);
-    const { error } = await op;
-    if (error) toast.error(error.message);
-    else { toast.success("Saved"); setOpen(false); load(); }
+    const { ok } = await runMutation(op, { successMsg: "Saved" });
+    if (ok) {
+      setOpen(false);
+      reload();
+    }
   };
+
   const updateSort = async (id: string, sort_order: number) => {
-    const { error } = await supabase.from("keywords").update({ sort_order }).eq("id", id);
-    if (error) toast.error(error.message); else load();
+    const { ok } = await runMutation(supabase.from("keywords").update({ sort_order }).eq("id", id));
+    if (ok) reload();
   };
+
   const del = async (id: string) => {
-    if (!confirm("Delete this keyword?")) return;
-    const { error } = await supabase.from("keywords").delete().eq("id", id);
-    if (error) toast.error(error.message); else { toast.success("Deleted"); load(); }
+    if (await confirmAndDelete("keywords", id, "Delete this keyword?")) reload();
   };
+
+  const patch = (p: Partial<KeywordForm>) => setForm((f) => ({ ...f, ...p }));
 
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center gap-3">
-        <p className="text-xs text-muted-foreground">Keyword chips shown above the search form. Lower order numbers appear first.</p>
+        <p className="text-xs text-muted-foreground">
+          Keyword chips shown above the search form. Lower order numbers appear first.
+        </p>
         <Button onClick={openAdd}><Plus className="h-4 w-4 mr-1" /> New keyword</Button>
       </div>
+
       <div className="border rounded-lg bg-card">
         <Table>
-          <TableHeader><TableRow>
-            <TableHead className="w-16">Emoji</TableHead><TableHead>Label</TableHead><TableHead>URL</TableHead><TableHead className="w-28">Order</TableHead><TableHead className="w-32 text-right">Actions</TableHead>
-          </TableRow></TableHeader>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-16">Emoji</TableHead>
+              <TableHead>Label</TableHead>
+              <TableHead>URL</TableHead>
+              <TableHead className="w-28">Order</TableHead>
+              <TableHead className="w-32 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
             {items.map((k) => (
               <TableRow key={k.id}>
                 <TableCell className="text-xl">{k.emoji ?? ""}</TableCell>
                 <TableCell className="font-medium">{k.label}</TableCell>
                 <TableCell className="max-w-xs truncate text-muted-foreground">
-                  <a href={k.affiliate_url} target="_blank" rel="noopener noreferrer" className="hover:underline">{k.affiliate_url}</a>
+                  <ExternalLink href={k.affiliate_url} />
                 </TableCell>
                 <TableCell>
-                  <Input
-                    type="number"
-                    className="h-8 w-20"
-                    defaultValue={k.sort_order}
-                    onBlur={(e) => {
-                      const v = Number(e.target.value);
-                      if (v !== k.sort_order) updateSort(k.id, v);
-                    }}
-                  />
+                  <SortInput value={k.sort_order} onCommit={(v) => updateSort(k.id, v)} />
                 </TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(k)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => del(k.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <RowActions onEdit={() => openEdit(k)} onDelete={() => del(k.id)} />
                 </TableCell>
               </TableRow>
             ))}
-            {items.length === 0 && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No keywords yet</TableCell></TableRow>}
+            {items.length === 0 && <EmptyRow colSpan={5} label="No keywords yet" />}
           </TableBody>
         </Table>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Edit" : "New"} keyword</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit" : "New"} keyword</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Emoji / Icon (optional)</Label>
-              <Input value={form.emoji} onChange={(e) => setForm({ ...form, emoji: e.target.value })} placeholder="🎁" maxLength={8} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Label</Label>
-              <Input value={form.label} onChange={(e) => setForm({ ...form, label: e.target.value })} placeholder="Giftable tech under $30" />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Affiliate URL</Label>
-              <Input value={form.affiliate_url} onChange={(e) => setForm({ ...form, affiliate_url: e.target.value })} placeholder="https://amazon.com/..." />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Order</Label>
-              <Input type="number" value={form.sort_order} onChange={(e) => setForm({ ...form, sort_order: Number(e.target.value) })} />
-            </div>
+            <Field label="Emoji / Icon (optional)">
+              <Input
+                value={form.emoji}
+                onChange={(e) => patch({ emoji: e.target.value })}
+                placeholder="🎁"
+                maxLength={8}
+              />
+            </Field>
+            <Field label="Label">
+              <Input
+                value={form.label}
+                onChange={(e) => patch({ label: e.target.value })}
+                placeholder="Giftable tech under $30"
+              />
+            </Field>
+            <Field label="Affiliate URL">
+              <Input
+                value={form.affiliate_url}
+                onChange={(e) => patch({ affiliate_url: e.target.value })}
+                placeholder="https://amazon.com/..."
+              />
+            </Field>
+            <Field label="Order">
+              <Input
+                type="number"
+                value={form.sort_order}
+                onChange={(e) => patch({ sort_order: Number(e.target.value) })}
+              />
+            </Field>
           </div>
           <DialogFooter><Button onClick={save}>Save</Button></DialogFooter>
         </DialogContent>
@@ -497,7 +753,9 @@ function KeywordsTab() {
   );
 }
 
-/* ---------- Settings ---------- */
+/* ============================================================
+   Settings tab
+   ============================================================ */
 
 function SettingsTab() {
   const [fallback, setFallback] = useState("");
@@ -505,32 +763,36 @@ function SettingsTab() {
   const [prices, setPrices] = useState<Tier[]>([]);
   const [reviews, setReviews] = useState<Tier[]>([]);
 
-  const load = async () => {
-    const [s, d, p, r] = await Promise.all([
-      supabase.from("app_settings").select("value").eq("key", "fallback_url").maybeSingle(),
-      supabase.from("discount_tiers").select("*").order("sort_order"),
-      supabase.from("price_tiers").select("*").order("sort_order"),
-      supabase.from("review_tiers").select("*").order("sort_order"),
+  const load = useCallback(async () => {
+    const [f, d, p, r] = await Promise.all([
+      fetchFallbackUrl(),
+      fetchTiers("discount_tiers"),
+      fetchTiers("price_tiers"),
+      fetchTiers("review_tiers"),
     ]);
-    setFallback(s.data?.value ?? "");
-    setDiscounts(d.data ?? []);
-    setPrices(p.data ?? []);
-    setReviews(r.data ?? []);
-  };
-  useEffect(() => { load(); }, []);
+    setFallback(f);
+    setDiscounts(d);
+    setPrices(p);
+    setReviews(r);
+  }, []);
 
-  const saveFallback = async () => {
-    const { error } = await supabase.from("app_settings").upsert({ key: "fallback_url", value: fallback, updated_at: new Date().toISOString() });
-    if (error) toast.error(error.message); else toast.success("Saved");
-  };
+  useEffect(() => { load(); }, [load]);
+
+  const saveFallback = () => runMutation(upsertFallbackUrl(fallback), { successMsg: "Saved" });
 
   return (
     <div className="space-y-8 max-w-3xl">
       <section className="space-y-3 p-6 border rounded-lg bg-card">
         <h2 className="text-lg font-semibold">Fallback URL</h2>
-        <p className="text-sm text-muted-foreground">Used when no exact match is found, or when "Any" is selected.</p>
+        <p className="text-sm text-muted-foreground">
+          Used when no exact match is found, or when "Any" is selected.
+        </p>
         <div className="flex gap-2">
-          <Input value={fallback} onChange={(e) => setFallback(e.target.value)} placeholder="https://www.amazon.com/deals" />
+          <Input
+            value={fallback}
+            onChange={(e) => setFallback(e.target.value)}
+            placeholder="https://www.amazon.com/deals"
+          />
           <Button onClick={saveFallback}>Save</Button>
         </div>
       </section>
@@ -542,20 +804,28 @@ function SettingsTab() {
   );
 }
 
-function TierEditor({ title, table, items, reload }: { title: string; table: "discount_tiers" | "price_tiers" | "review_tiers"; items: Tier[]; reload: () => void }) {
+type TierEditorProps = { title: string; table: TierTable; items: Tier[]; reload: () => void };
+
+function TierEditor({ title, table, items, reload }: TierEditorProps) {
   const [label, setLabel] = useState("");
   const [value, setValue] = useState("");
   const [sort, setSort] = useState(0);
 
   const add = async () => {
     if (!label.trim() || !value.trim()) return;
-    const { error } = await supabase.from(table).insert({ label: label.trim(), value: value.trim(), sort_order: sort });
-    if (error) toast.error(error.message); else { setLabel(""); setValue(""); setSort(0); reload(); }
+    const { ok } = await runMutation(
+      supabase.from(table).insert({ label: label.trim(), value: value.trim(), sort_order: sort }),
+    );
+    if (ok) {
+      setLabel("");
+      setValue("");
+      setSort(0);
+      reload();
+    }
   };
+
   const del = async (id: string) => {
-    if (!confirm("Delete this tier?")) return;
-    const { error } = await supabase.from(table).delete().eq("id", id);
-    if (error) toast.error(error.message); else reload();
+    if (await confirmAndDelete(table, id, "Delete this tier?")) reload();
   };
 
   return (
@@ -563,23 +833,50 @@ function TierEditor({ title, table, items, reload }: { title: string; table: "di
       <h2 className="text-lg font-semibold">{title}</h2>
       <div className="border rounded-md">
         <Table>
-          <TableHeader><TableRow><TableHead>Label</TableHead><TableHead>Value (key)</TableHead><TableHead className="w-20">Order</TableHead><TableHead className="w-16" /></TableRow></TableHeader>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Label</TableHead>
+              <TableHead>Value (key)</TableHead>
+              <TableHead className="w-20">Order</TableHead>
+              <TableHead className="w-16" />
+            </TableRow>
+          </TableHeader>
           <TableBody>
             {items.map((t) => (
               <TableRow key={t.id}>
                 <TableCell>{t.label}</TableCell>
                 <TableCell className="font-mono text-xs">{t.value}</TableCell>
                 <TableCell>{t.sort_order}</TableCell>
-                <TableCell><Button variant="ghost" size="icon" onClick={() => del(t.id)}><Trash2 className="h-4 w-4" /></Button></TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" onClick={() => del(t.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
       <div className="grid grid-cols-12 gap-2">
-        <Input className="col-span-5" placeholder="Label (e.g. 25%+)" value={label} onChange={(e) => setLabel(e.target.value)} />
-        <Input className="col-span-4" placeholder="Value key (e.g. 25)" value={value} onChange={(e) => setValue(e.target.value)} />
-        <Input className="col-span-2" type="number" placeholder="Order" value={sort} onChange={(e) => setSort(Number(e.target.value))} />
+        <Input
+          className="col-span-5"
+          placeholder="Label (e.g. 25%+)"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+        />
+        <Input
+          className="col-span-4"
+          placeholder="Value key (e.g. 25)"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+        />
+        <Input
+          className="col-span-2"
+          type="number"
+          placeholder="Order"
+          value={sort}
+          onChange={(e) => setSort(Number(e.target.value))}
+        />
         <Button className="col-span-1" onClick={add}><Plus className="h-4 w-4" /></Button>
       </div>
     </section>

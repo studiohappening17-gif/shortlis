@@ -1,52 +1,68 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Check, Loader2, Search, Settings } from "lucide-react";
+import { toast } from "sonner";
+
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
-
-
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { chipClasses, gridColsForCount } from "@/lib/chip-styles";
+import { resolveAffiliateUrl } from "@/lib/resolve-affiliate-url";
+import type { Department, Keyword, Tier } from "@/lib/types";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
 });
 
-type Tier = { id: string; label: string; value: string; sort_order: number };
-type Dept = { id: string; name: string };
-type Keyword = { id: string; label: string; affiliate_url: string; emoji: string | null };
+type HomeData = {
+  departments: Department[];
+  discountTiers: Tier[];
+  priceTiers: Tier[];
+  reviewTiers: Tier[];
+  keywords: Pick<Keyword, "id" | "label" | "affiliate_url" | "emoji">[];
+};
+
+const EMPTY_DATA: HomeData = {
+  departments: [],
+  discountTiers: [],
+  priceTiers: [],
+  reviewTiers: [],
+  keywords: [],
+};
+
+const loadHomeData = async (): Promise<HomeData> => {
+  const [d, dt, pt, rt, kw] = await Promise.all([
+    supabase.from("departments").select("id,name,sort_order,default_affiliate_url").order("sort_order").order("name"),
+    supabase.from("discount_tiers").select("*").order("sort_order"),
+    supabase.from("price_tiers").select("*").order("sort_order"),
+    supabase.from("review_tiers").select("*").order("sort_order"),
+    supabase.from("keywords").select("id,label,affiliate_url,emoji").order("sort_order"),
+  ]);
+  return {
+    departments: (d.data as Department[]) ?? [],
+    discountTiers: dt.data ?? [],
+    priceTiers: pt.data ?? [],
+    reviewTiers: rt.data ?? [],
+    keywords: kw.data ?? [],
+  };
+};
 
 function HomePage() {
-  const [departments, setDepartments] = useState<Dept[]>([]);
-  const [discountTiers, setDiscountTiers] = useState<Tier[]>([]);
-  const [priceTiers, setPriceTiers] = useState<Tier[]>([]);
-  const [reviewTiers, setReviewTiers] = useState<Tier[]>([]);
-  const [keywords, setKeywords] = useState<Keyword[]>([]);
+  const [data, setData] = useState<HomeData>(EMPTY_DATA);
+  const [loading, setLoading] = useState(true);
   const [dept, setDept] = useState("any");
   const [discount, setDiscount] = useState("any");
   const [price, setPrice] = useState("any");
   const [review, setReview] = useState("any");
-  const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      supabase.from("departments").select("id,name").order("sort_order").order("name"),
-      supabase.from("discount_tiers").select("*").order("sort_order"),
-      supabase.from("price_tiers").select("*").order("sort_order"),
-      supabase.from("review_tiers").select("*").order("sort_order"),
-      supabase.from("keywords").select("id,label,affiliate_url,emoji").order("sort_order"),
-    ]).then(([d, dt, pt, rt, kw]) => {
-      setDepartments(d.data ?? []);
-      setDiscountTiers(dt.data ?? []);
-      setPriceTiers(pt.data ?? []);
-      setReviewTiers(rt.data ?? []);
-      setKeywords(kw.data ?? []);
-      // ensure first option selected
-      if (dt.data?.length) setDiscount(dt.data[0].value);
-      if (pt.data?.length) setPrice(pt.data[0].value);
-      if (rt.data?.length) setReview(rt.data[0].value);
+    loadHomeData().then((d) => {
+      setData(d);
+      if (d.discountTiers[0]) setDiscount(d.discountTiers[0].value);
+      if (d.priceTiers[0]) setPrice(d.priceTiers[0].value);
+      if (d.reviewTiers[0]) setReview(d.reviewTiers[0].value);
       setLoading(false);
     });
   }, []);
@@ -54,36 +70,8 @@ function HomePage() {
   const handleSearch = async () => {
     setSearching(true);
     try {
-      const fallback = await supabase
-        .from("app_settings")
-        .select("value")
-        .eq("key", "fallback_url")
-        .maybeSingle();
-      const globalFallback = fallback.data?.value ?? "https://www.amazon.com";
-
-      let target: string | null = null;
-      if (discount !== "any" && price !== "any" && review !== "any") {
-        const q = supabase
-          .from("affiliate_links")
-          .select("affiliate_url")
-          .eq("discount_range", discount)
-          .eq("price_range", price)
-          .eq("review_range", review);
-        const { data } = await (dept !== "any" ? q.eq("dept_id", dept) : q.is("dept_id", null)).maybeSingle();
-        if (data?.affiliate_url) target = data.affiliate_url;
-      }
-
-      // Fallback to department default if no specific link matched
-      if (!target && dept !== "any") {
-        const { data } = await supabase
-          .from("departments")
-          .select("default_affiliate_url")
-          .eq("id", dept)
-          .maybeSingle();
-        if (data?.default_affiliate_url) target = data.default_affiliate_url;
-      }
-
-      window.open(target ?? globalFallback, "_blank", "noopener,noreferrer");
+      const target = await resolveAffiliateUrl({ deptId: dept, discount, price, review });
+      window.open(target, "_blank", "noopener,noreferrer");
     } catch (e) {
       toast.error("Search failed");
       console.error(e);
@@ -92,91 +80,30 @@ function HomePage() {
     }
   };
 
+  const { departments, discountTiers, priceTiers, reviewTiers, keywords } = data;
+
   return (
     <div className="min-h-screen bg-background relative">
-      <div className="absolute top-4 right-4 flex gap-2 z-10">
-        <Link to="/admin">
-          <Button variant="ghost" size="icon" aria-label="Admin">
-            <Settings className="h-4 w-4" />
-          </Button>
-        </Link>
-        <ThemeToggle />
-      </div>
+      <TopBar />
 
       <main className="mx-auto max-w-xl px-4 py-12 sm:py-16">
-        <header className="mb-10 rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8">
-          <h1 className="text-4xl font-semibold tracking-[-0.02em] text-foreground sm:text-4xl">
-            Shortlisted Amazon Deals
-          </h1>
-          <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 mt-5">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-            <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-foreground/70">
-              Unlock curated deals matched to your search
-            </span>
-          </div>
-        </header>
+        <PageHeader />
 
-        {keywords.length > 0 && (
-          <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-            {keywords.map((k) => (
-              <a
-                key={k.id}
-                href={k.affiliate_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="rounded-[14px] border border-keyword-chip-border px-4 py-3 text-sm font-medium text-keyword-chip-foreground text-center transition-colors hover:border-amazon inline-flex items-center justify-center gap-2 bg-keyword-chip"
-              >
-                {k.emoji && <span aria-hidden>{k.emoji}</span>}
-                <span>{k.label}</span>
-              </a>
-            ))}
-          </div>
-        )}
+        {keywords.length > 0 && <KeywordChips items={keywords} />}
 
         <div className="rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8 space-y-6">
-          {/* Department */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium text-foreground/80">Department</label>
-            <div className="flex flex-wrap gap-2 sm:gap-3">
-              {[{ id: "any", name: "Any" }, ...departments].map((d) => {
-                const selected = dept === d.id;
-                return (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => setDept(d.id)}
-                    disabled={loading}
-                    className={cn(
-                      "rounded-[14px] border px-4 py-3 text-sm font-medium transition-all",
-                      selected
-                        ? "border-chip-selected-border bg-chip-selected-bg text-chip-selected-text shadow-sm"
-                        : "border-border bg-card text-foreground/75 hover:border-amazon hover:shadow-sm"
-                    )}
-                  >
-                    {d.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <DepartmentChips
+            departments={departments}
+            value={dept}
+            onChange={setDept}
+            disabled={loading}
+          />
 
-          {/* Discount + Reviews */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <ChipGroup
-              label="Discount"
-              tiers={discountTiers}
-              value={discount}
-              onChange={setDiscount}
-            />
-            <ChipGroup
-              label="Reviews"
-              tiers={reviewTiers}
-              value={review}
-              onChange={setReview}
-            />
+            <ChipGroup label="Discount" tiers={discountTiers} value={discount} onChange={setDiscount} />
+            <ChipGroup label="Reviews" tiers={reviewTiers} value={review} onChange={setReview} />
           </div>
 
-          {/* Price */}
           <ChipGroup label="Price" tiers={priceTiers} value={price} onChange={setPrice} />
 
           <Button
@@ -184,8 +111,12 @@ function HomePage() {
             disabled={searching || loading}
             className="w-full h-14 text-base font-medium rounded-[14px] bg-amazon hover:bg-amazon-hover active:brightness-95 text-amazon-foreground shadow-sm transition-colors"
           >
-            {searching ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-              <><Search className="h-4 w-4 mr-2" /> Search</>
+            {searching ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>
+                <Search className="h-4 w-4 mr-2" /> Search
+              </>
             )}
           </Button>
         </div>
@@ -198,32 +129,89 @@ function HomePage() {
   );
 }
 
-function ChipGroup({
-  label,
-  tiers,
-  value,
-  onChange,
-}: {
+const TopBar = () => (
+  <div className="absolute top-4 right-4 flex gap-2 z-10">
+    <Link to="/admin">
+      <Button variant="ghost" size="icon" aria-label="Admin">
+        <Settings className="h-4 w-4" />
+      </Button>
+    </Link>
+    <ThemeToggle />
+  </div>
+);
+
+const PageHeader = () => (
+  <header className="mb-10 rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8">
+    <h1 className="text-4xl font-semibold tracking-[-0.02em] text-foreground sm:text-4xl">
+      Shortlisted Amazon Deals
+    </h1>
+    <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 mt-5">
+      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+      <span className="text-[11px] font-semibold tracking-[0.14em] uppercase text-foreground/70">
+        Unlock curated deals matched to your search
+      </span>
+    </div>
+  </header>
+);
+
+const KeywordChips = ({ items }: { items: HomeData["keywords"] }) => (
+  <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+    {items.map((k) => (
+      <a
+        key={k.id}
+        href={k.affiliate_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="rounded-[14px] border border-keyword-chip-border px-4 py-3 text-sm font-medium text-keyword-chip-foreground text-center transition-colors hover:border-amazon inline-flex items-center justify-center gap-2 bg-keyword-chip"
+      >
+        {k.emoji && <span aria-hidden>{k.emoji}</span>}
+        <span>{k.label}</span>
+      </a>
+    ))}
+  </div>
+);
+
+type DepartmentChipsProps = {
+  departments: Department[];
+  value: string;
+  onChange: (id: string) => void;
+  disabled?: boolean;
+};
+
+const DepartmentChips = ({ departments, value, onChange, disabled }: DepartmentChipsProps) => {
+  const options = [{ id: "any", name: "Any" } as const, ...departments];
+  return (
+    <div className="space-y-3">
+      <label className="text-sm font-medium text-foreground/80">Department</label>
+      <div className="flex flex-wrap gap-2 sm:gap-3">
+        {options.map((d) => (
+          <button
+            key={d.id}
+            type="button"
+            onClick={() => onChange(d.id)}
+            disabled={disabled}
+            className={chipClasses(value === d.id)}
+          >
+            {d.name}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+type ChipGroupProps = {
   label: string;
   tiers: Tier[];
   value: string;
   onChange: (v: string) => void;
-}) {
+};
+
+function ChipGroup({ label, tiers, value, onChange }: ChipGroupProps) {
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-foreground/80">{label}</label>
-      <div
-        className={cn(
-          "grid gap-2 sm:gap-3",
-          tiers.length <= 2
-            ? "grid-cols-2"
-            : tiers.length === 4
-              ? "grid-cols-2 sm:grid-cols-4"
-              : tiers.length === 3
-                ? "grid-cols-3"
-                : "grid-cols-3 sm:grid-cols-5"
-        )}
-      >
+      <div className={cn("grid gap-2 sm:gap-3", gridColsForCount(tiers.length))}>
         {tiers.map((t) => {
           const selected = value === t.value;
           return (
@@ -232,19 +220,14 @@ function ChipGroup({
               type="button"
               onClick={() => onChange(t.value)}
               className={cn(
-                "relative rounded-[14px] border px-3 py-4 text-sm font-medium transition-all",
-                "flex flex-col items-center justify-center gap-1.5 min-h-[80px]",
-                selected
-                  ? "border-chip-selected-border bg-chip-selected-bg text-chip-selected-text shadow-sm"
-                  : "border-border bg-card text-foreground/75 hover:border-amazon hover:shadow-sm"
+                chipClasses(selected),
+                "relative px-3 py-4 flex flex-col items-center justify-center gap-1.5 min-h-[80px]",
               )}
             >
               <span
                 className={cn(
                   "h-5 w-5 rounded-full flex items-center justify-center border transition-colors",
-                  selected
-                    ? "border-amazon bg-amazon text-amazon-foreground"
-                    : "border-border"
+                  selected ? "border-amazon bg-amazon text-amazon-foreground" : "border-border",
                 )}
               >
                 {selected && <Check className="h-3 w-3" strokeWidth={3} />}
