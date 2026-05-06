@@ -41,7 +41,7 @@ type Dept = { id: string; name: string; sort_order: number; default_affiliate_ur
 type Tier = { id: string; label: string; value: string; sort_order: number };
 type Link_ = {
   id: string;
-  dept_id: string;
+  dept_id: string | null;
   discount_range: string;
   price_range: string;
   review_range: string;
@@ -275,7 +275,7 @@ function LinksTab() {
   };
   const openEdit = (l: Link_) => {
     setEditing(l);
-    setForm({ dept_id: l.dept_id, discount_range: l.discount_range, price_range: l.price_range, review_range: l.review_range ?? "any", affiliate_url: l.affiliate_url });
+    setForm({ dept_id: l.dept_id ?? "any", discount_range: l.discount_range, price_range: l.price_range, review_range: l.review_range ?? "any", affiliate_url: l.affiliate_url });
     setOpen(true);
   };
 
@@ -284,9 +284,10 @@ function LinksTab() {
       toast.error("Fill all fields");
       return;
     }
+    const payload = { ...form, dept_id: form.dept_id === "any" ? null : form.dept_id };
     const op = editing
-      ? supabase.from("affiliate_links").update(form).eq("id", editing.id)
-      : supabase.from("affiliate_links").insert(form);
+      ? supabase.from("affiliate_links").update(payload).eq("id", editing.id)
+      : supabase.from("affiliate_links").insert(payload);
     const { error } = await op;
     if (error) toast.error(error.message);
     else { toast.success("Saved"); setOpen(false); load(); }
@@ -297,7 +298,7 @@ function LinksTab() {
     if (error) toast.error(error.message); else { toast.success("Deleted"); load(); }
   };
 
-  const deptName = (id: string) => depts.find((d) => d.id === id)?.name ?? "—";
+  const deptName = (id: string | null) => (id ? depts.find((d) => d.id === id)?.name ?? "—" : "Any");
   const tierLabel = (tiers: Tier[], v: string) => tiers.find((t) => t.value === v)?.label ?? v;
 
   return (
@@ -337,7 +338,7 @@ function LinksTab() {
               <Label>Department</Label>
               <Select value={form.dept_id} onValueChange={(v) => setForm({ ...form, dept_id: v })}>
                 <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-                <SelectContent>{depts.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                <SelectContent><SelectItem value="any">Any</SelectItem>{depts.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">

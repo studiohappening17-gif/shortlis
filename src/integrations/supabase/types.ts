@@ -18,7 +18,7 @@ export type Database = {
         Row: {
           affiliate_url: string
           created_at: string
-          dept_id: string
+          dept_id: string | null
           discount_range: string
           id: string
           price_range: string
@@ -27,7 +27,7 @@ export type Database = {
         Insert: {
           affiliate_url: string
           created_at?: string
-          dept_id: string
+          dept_id?: string | null
           discount_range: string
           id?: string
           price_range: string
@@ -36,7 +36,7 @@ export type Database = {
         Update: {
           affiliate_url?: string
           created_at?: string
-          dept_id?: string
+          dept_id?: string | null
           discount_range?: string
           id?: string
           price_range?: string
