@@ -59,9 +59,9 @@ function HomePage() {
         .select("value")
         .eq("key", "fallback_url")
         .maybeSingle();
-      const fallbackUrl = fallback.data?.value ?? "https://www.amazon.com";
+      const globalFallback = fallback.data?.value ?? "https://www.amazon.com";
 
-      let target = fallbackUrl;
+      let target: string | null = null;
       if (dept !== "any" && discount !== "any" && price !== "any" && review !== "any") {
         const { data } = await supabase
           .from("affiliate_links")
@@ -73,7 +73,18 @@ function HomePage() {
           .maybeSingle();
         if (data?.affiliate_url) target = data.affiliate_url;
       }
-      window.open(target, "_blank", "noopener,noreferrer");
+
+      // Fallback to department default if no specific link matched
+      if (!target && dept !== "any") {
+        const { data } = await supabase
+          .from("departments")
+          .select("default_affiliate_url")
+          .eq("id", dept)
+          .maybeSingle();
+        if (data?.default_affiliate_url) target = data.default_affiliate_url;
+      }
+
+      window.open(target ?? globalFallback, "_blank", "noopener,noreferrer");
     } catch (e) {
       toast.error("Search failed");
       console.error(e);

@@ -1,0 +1,1 @@
+ALTER TABLE public.departments ADD COLUMN default_affiliate_url text;

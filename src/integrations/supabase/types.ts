@@ -73,18 +73,21 @@ export type Database = {
       departments: {
         Row: {
           created_at: string
+          default_affiliate_url: string | null
           id: string
           name: string
           sort_order: number
         }
         Insert: {
           created_at?: string
+          default_affiliate_url?: string | null
           id?: string
           name: string
           sort_order?: number
         }
         Update: {
           created_at?: string
+          default_affiliate_url?: string | null
           id?: string
           name?: string
           sort_order?: number
