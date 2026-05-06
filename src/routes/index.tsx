@@ -124,7 +124,7 @@ function HomePage() {
                 href={k.affiliate_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-[14px] border border-border/60 px-4 py-3 text-sm font-medium text-foreground/80 text-center transition-colors hover:border-amazon hover:text-foreground inline-flex items-center justify-center gap-2 bg-[#cfd1f7]"
+                className="rounded-[14px] border border-border/60 px-4 py-3 text-sm font-medium text-foreground/80 text-center transition-colors hover:border-amazon hover:text-foreground inline-flex items-center justify-center gap-2 bg-[#595c7d]"
               >
                 {k.emoji && <span aria-hidden>{k.emoji}</span>}
                 <span>{k.label}</span>
