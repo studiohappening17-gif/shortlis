@@ -137,31 +137,34 @@ function HomePage() {
         </div>
 
         {seoCategories.length > 0 && (
-          <section aria-labelledby="seasonal-heading" className="mt-12">
-            <h2 id="seasonal-heading" className="text-lg font-semibold text-foreground">
-              Popular Seasonal Amazon Deals
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Hand-picked deal pages for every major shopping season.
-            </p>
-            <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {seoCategories.map((c: SeoLink) => (
+          <section aria-labelledby="guides-heading" className="mt-12">
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 id="guides-heading" className="text-lg font-semibold text-foreground">
+                Latest Shopping Guides
+              </h2>
+              <Link to="/deals" className="text-xs text-primary hover:underline whitespace-nowrap">
+                View all →
+              </Link>
+            </div>
+            <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {seoCategories.slice(0, 6).map((c: SeoLink) => (
                 <li key={c.id}>
-                  <Link
-                    to="/deals/$slug"
-                    params={{ slug: c.slug }}
-                    className="block rounded-[12px] border border-border/70 bg-card px-4 py-3 text-sm font-medium text-foreground hover:border-amazon transition-colors"
-                  >
-                    {c.title}
-                  </Link>
+                  <article className="h-full flex flex-col justify-between gap-3 rounded-[14px] border border-border/70 bg-card p-4 hover:border-amazon transition-colors">
+                    <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
+                      {c.title}
+                    </h3>
+                    <Link
+                      to="/deals/$slug"
+                      params={{ slug: c.slug }}
+                      className="inline-flex items-center self-start text-xs font-medium text-primary hover:underline"
+                      aria-label={`Read more about ${c.title}`}
+                    >
+                      Read more →
+                    </Link>
+                  </article>
                 </li>
               ))}
             </ul>
-            <div className="mt-4 text-center">
-              <Link to="/deals" className="text-sm text-primary hover:underline">
-                View all deal categories →
-              </Link>
-            </div>
           </section>
         )}
 
