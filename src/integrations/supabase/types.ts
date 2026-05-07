@@ -193,6 +193,72 @@ export type Database = {
         }
         Relationships: []
       }
+      seo_categories: {
+        Row: {
+          affiliate_url: string
+          body_html: string
+          created_at: string
+          h1: string
+          hero_image_url: string | null
+          id: string
+          intro_html: string
+          is_published: boolean
+          is_seasonal: boolean
+          keywords: string[]
+          meta_description: string
+          meta_title: string
+          og_image_url: string | null
+          season_end: string | null
+          season_start: string | null
+          slug: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affiliate_url: string
+          body_html?: string
+          created_at?: string
+          h1: string
+          hero_image_url?: string | null
+          id?: string
+          intro_html?: string
+          is_published?: boolean
+          is_seasonal?: boolean
+          keywords?: string[]
+          meta_description: string
+          meta_title: string
+          og_image_url?: string | null
+          season_end?: string | null
+          season_start?: string | null
+          slug: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affiliate_url?: string
+          body_html?: string
+          created_at?: string
+          h1?: string
+          hero_image_url?: string | null
+          id?: string
+          intro_html?: string
+          is_published?: boolean
+          is_seasonal?: boolean
+          keywords?: string[]
+          meta_description?: string
+          meta_title?: string
+          og_image_url?: string | null
+          season_end?: string | null
+          season_start?: string | null
+          slug?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
