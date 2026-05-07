@@ -142,7 +142,7 @@ const TopBar = () => (
 
 const PageHeader = () => (
   <header className="mb-10 rounded-[20px] border border-border/70 bg-card shadow-[0_8px_30px_rgb(17,24,39,0.06)] p-6 sm:p-8 [container-type:inline-size]">
-    <h1 className="hero-title font-extrabold italic tracking-[-0.02em] bg-gradient-to-r from-[#ff8a3d] via-[#ff3d77] to-[#7a3dff] bg-clip-text text-transparent dark:from-[#ffb066] dark:via-[#ff6aa1] dark:to-[#9b8cff] whitespace-nowrap leading-tight text-[clamp(1.1rem,8.6cqi,3rem)]">
+    <h1 className="hero-title font-extrabold italic tracking-[-0.02em] bg-gradient-to-r from-[#ff8a3d] via-[#ff3d77] to-[#7a3dff] bg-clip-text text-transparent dark:from-[#ffb066] dark:via-[#ff6aa1] dark:to-[#9b8cff] whitespace-nowrap leading-tight px-2 sm:px-4 text-center text-[clamp(1rem,7.4cqi,2.6rem)]">
       Shortlisted Amazon Deals
     </h1>
     <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 mt-5">
