@@ -146,25 +146,6 @@ function HomePage() {
                 View all →
               </Link>
             </div>
-            <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {seoCategories.slice(0, 6).map((c: SeoLink) => (
-                <li key={c.id}>
-                  <article className="h-full flex flex-col justify-between gap-3 rounded-[14px] border border-border/70 bg-card p-4 hover:border-amazon transition-colors">
-                    <h3 className="text-sm font-semibold text-foreground leading-snug line-clamp-2">
-                      {c.title}
-                    </h3>
-                    <Link
-                      to="/deals/$slug"
-                      params={{ slug: c.slug }}
-                      className="inline-flex items-center self-start text-xs font-medium text-primary hover:underline"
-                      aria-label={`Read more about ${c.title}`}
-                    >
-                      Read more →
-                    </Link>
-                  </article>
-                </li>
-              ))}
-            </ul>
           </section>
         )}
 
