@@ -129,7 +129,7 @@ function DealLanding() {
           <section className="mt-10">
             <h2 className="text-lg font-semibold">Related searches</h2>
             <ul className="mt-3 flex flex-wrap gap-2">
-              {c.keywords.map((kw) => (
+              {c.keywords.map((kw: string) => (
                 <li
                   key={kw}
                   className="rounded-full border border-border/70 bg-muted px-3 py-1 text-xs text-muted-foreground"

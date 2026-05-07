@@ -73,7 +73,7 @@ function DealsHub() {
 
         <h2 className="mt-10 mb-4 text-lg font-semibold">Shop by Season &amp; Category</h2>
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {cats.map((c) => (
+          {cats.map((c: DealsRow) => (
             <li key={c.id}>
               <Link
                 to="/deals/$slug"
