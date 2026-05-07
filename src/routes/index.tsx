@@ -41,7 +41,7 @@ export const Route = createFileRoute("/")({
   staleTime: 5 * 60 * 1000,
   gcTime: 30 * 60 * 1000,
   component: HomePage,
-  errorComponent: ({ error, reset }) => <ErrorComponent error={error} reset={reset} />,
+  errorComponent: ({ error }) => <ErrorComponent error={error} />,
   notFoundComponent: () => <div className="p-8 text-center">Not found</div>,
 });
 
