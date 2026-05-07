@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, ErrorComponent, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { Check, Loader2, Search, Settings } from "lucide-react";
 import { toast } from "sonner";
 
@@ -11,10 +11,6 @@ import { chipClasses, gridColsForCount } from "@/lib/chip-styles";
 import { resolveAffiliateUrl } from "@/lib/resolve-affiliate-url";
 import type { Department, Keyword, Tier } from "@/lib/types";
 
-export const Route = createFileRoute("/")({
-  component: HomePage,
-});
-
 type HomeData = {
   departments: Department[];
   discountTiers: Tier[];
@@ -23,49 +19,48 @@ type HomeData = {
   keywords: Pick<Keyword, "id" | "label" | "affiliate_url" | "emoji">[];
 };
 
-const EMPTY_DATA: HomeData = {
-  departments: [],
-  discountTiers: [],
-  priceTiers: [],
-  reviewTiers: [],
-  keywords: [],
-};
-
 const loadHomeData = async (): Promise<HomeData> => {
   const [d, dt, pt, rt, kw] = await Promise.all([
     supabase.from("departments").select("id,name,sort_order,default_affiliate_url").order("sort_order").order("name"),
-    supabase.from("discount_tiers").select("*").order("sort_order"),
-    supabase.from("price_tiers").select("*").order("sort_order"),
-    supabase.from("review_tiers").select("*").order("sort_order"),
+    supabase.from("discount_tiers").select("id,label,value,sort_order").order("sort_order"),
+    supabase.from("price_tiers").select("id,label,value,sort_order").order("sort_order"),
+    supabase.from("review_tiers").select("id,label,value,sort_order").order("sort_order"),
     supabase.from("keywords").select("id,label,affiliate_url,emoji").order("sort_order"),
   ]);
   return {
     departments: (d.data as Department[]) ?? [],
-    discountTiers: dt.data ?? [],
-    priceTiers: pt.data ?? [],
-    reviewTiers: rt.data ?? [],
+    discountTiers: (dt.data as Tier[]) ?? [],
+    priceTiers: (pt.data as Tier[]) ?? [],
+    reviewTiers: (rt.data as Tier[]) ?? [],
     keywords: kw.data ?? [],
   };
 };
 
-function HomePage() {
-  const [data, setData] = useState<HomeData>(EMPTY_DATA);
-  const [loading, setLoading] = useState(true);
-  const [dept, setDept] = useState("any");
-  const [discount, setDiscount] = useState("any");
-  const [price, setPrice] = useState("any");
-  const [review, setReview] = useState("any");
-  const [searching, setSearching] = useState(false);
+export const Route = createFileRoute("/")({
+  loader: () => loadHomeData(),
+  staleTime: 5 * 60 * 1000,
+  gcTime: 30 * 60 * 1000,
+  component: HomePage,
+  errorComponent: ({ error, reset }) => <ErrorComponent error={error} reset={reset} />,
+  notFoundComponent: () => <div className="p-8 text-center">Not found</div>,
+});
 
-  useEffect(() => {
-    loadHomeData().then((d) => {
-      setData(d);
-      if (d.discountTiers[0]) setDiscount(d.discountTiers[0].value);
-      if (d.priceTiers[0]) setPrice(d.priceTiers[0].value);
-      if (d.reviewTiers[0]) setReview(d.reviewTiers[0].value);
-      setLoading(false);
-    });
-  }, []);
+function HomePage() {
+  const data = Route.useLoaderData();
+  const initial = useMemo(
+    () => ({
+      discount: data.discountTiers[0]?.value ?? "any",
+      price: data.priceTiers[0]?.value ?? "any",
+      review: data.reviewTiers[0]?.value ?? "any",
+    }),
+    [data],
+  );
+  const [dept, setDept] = useState("any");
+  const [discount, setDiscount] = useState(initial.discount);
+  const [price, setPrice] = useState(initial.price);
+  const [review, setReview] = useState(initial.review);
+  const [searching, setSearching] = useState(false);
+  const loading = false;
 
   const handleSearch = async () => {
     setSearching(true);
