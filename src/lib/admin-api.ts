@@ -68,7 +68,7 @@ export async function runMutation(
 }
 
 export async function confirmAndDelete(
-  table: "departments" | "affiliate_links" | "keywords" | TierTable,
+  table: "departments" | "affiliate_links" | "keywords" | "seo_categories" | TierTable,
   id: string,
   message = "Delete this item?",
 ): Promise<boolean> {
