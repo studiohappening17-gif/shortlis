@@ -12,12 +12,13 @@ import {
   fetchDepartments,
   fetchFallbackUrl,
   fetchKeywords,
+  fetchSeoCategories,
   fetchTiers,
   runMutation,
   upsertFallbackUrl,
 } from "@/lib/admin-api";
 import { useResource } from "@/hooks/useResource";
-import type { AffiliateLink, Department, Keyword, Tier, TierTable } from "@/lib/types";
+import type { AffiliateLink, Department, Keyword, SeoCategory, Tier, TierTable } from "@/lib/types";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -129,11 +130,13 @@ const AdminTabs = () => (
       <TabsTrigger value="links">Affiliate Links</TabsTrigger>
       <TabsTrigger value="departments">Departments</TabsTrigger>
       <TabsTrigger value="keywords">Keywords</TabsTrigger>
+      <TabsTrigger value="seo">SEO Pages</TabsTrigger>
       <TabsTrigger value="settings">Settings</TabsTrigger>
     </TabsList>
     <TabsContent value="links" className="mt-6"><LinksTab /></TabsContent>
     <TabsContent value="departments" className="mt-6"><DepartmentsTab /></TabsContent>
     <TabsContent value="keywords" className="mt-6"><KeywordsTab /></TabsContent>
+    <TabsContent value="seo" className="mt-6"><SeoTab /></TabsContent>
     <TabsContent value="settings" className="mt-6"><SettingsTab /></TabsContent>
   </Tabs>
 );
