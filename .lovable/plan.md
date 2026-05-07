@@ -1,67 +1,115 @@
-# Refactor `src/routes/index.tsx` and `src/routes/admin.tsx`
+## SEO Optimization Plan
 
-Goal: improve readability and remove redundancy without changing any behavior, UI, queries, or data shapes.
+Goal: turn the single-page deal finder into a scalable, SEO-friendly site that ranks for high-intent seasonal shopping keywords, with new categories addable from the admin dashboard.
 
-## New shared modules
+### 1. Scalable data model (admin-managed)
 
-- `src/lib/types.ts` — shared types reused across pages:
-  - `Department`, `Tier`, `AffiliateLink`, `Keyword`, `TierTable` (`"discount_tiers" | "price_tiers" | "review_tiers"`).
-- `src/lib/admin-api.ts` — thin wrappers around Supabase calls used in admin (kept query-equivalent):
-  - `fetchDepartments()`, `fetchTiers(table)`, `fetchKeywords()`, `fetchAffiliateLinks()`, `fetchFallbackUrl()`, `upsertFallbackUrl(value)`.
-  - `runMutation(promise, { successMsg })` helper that toasts on error/success and returns `{ ok }`.
-  - `confirmAndDelete(table, id, message)` helper.
-- `src/hooks/useResource.ts` — small hook to standardise `items + load()` patterns used in every admin tab:
-  - `const { items, reload } = useResource(loaderFn)` (calls loader on mount, exposes `reload`).
-- `src/lib/resolve-affiliate-url.ts` — pure async function used by the home page:
-  - `resolveAffiliateUrl({ deptId, discount, price, review })` returns the target URL using the same precedence: exact match → department default → global fallback. Keeps existing logic verbatim, just hoisted out of the component.
+Create a new table `seo_categories` so non-developers can add seasonal landing pages from the admin dashboard without code changes.
 
-## `src/routes/index.tsx` changes
+```text
+seo_categories
+  id uuid pk
+  slug text unique          -- e.g. "mothers-day-gifts"
+  title text                -- H1 + <title>
+  meta_title text           -- <title> override (<=60 chars)
+  meta_description text     -- <=160 chars
+  h1 text
+  intro_html text           -- short rich intro paragraph
+  body_html text            -- longer SEO copy with H2/H3
+  keywords text[]           -- semantic keywords
+  affiliate_url text        -- Amazon affiliate target for primary CTA
+  hero_image_url text
+  og_image_url text
+  is_published boolean default true
+  is_seasonal boolean default true
+  season_start date null
+  season_end date null
+  sort_order int default 0
+  updated_at timestamptz
+```
 
-- Import shared types from `@/lib/types`.
-- Replace the single `Promise.all` of 5 queries with a typed `loadHomeData()` helper kept locally; destructure into named variables.
-- Extract a `useHomeData()` hook that owns: lists, default selections, `loading` state.
-- Replace `handleSearch` body with a call to `resolveAffiliateUrl(...)` and a single `window.open` call. Keep error toast + `searching` state.
-- Extract small presentational pieces:
-  - `<TopBar />` (settings link + theme toggle).
-  - `<Header />` (title + status pill).
-  - `<KeywordChips items={keywords} />`.
-  - `<DepartmentChips departments value onChange disabled />` — wraps the existing chip rendering; reuses the same chip class strings via a shared `chipClasses(selected)` helper from `src/lib/chip-styles.ts`.
-- `ChipGroup` keeps its API; its `cn()` grid-cols ternary is replaced by a `gridColsForCount(n)` helper in the same file. Shared chip classes come from `chipClasses(selected)`.
-- Remove the unused `Tier`/`Dept`/`Keyword` local type aliases (use shared types).
+RLS: public SELECT (only `is_published = true`), admin ALL (mirrors existing tables).
 
-No JSX, classes, query shapes, ordering, fallback semantics, or copy strings change.
+Seed rows for the 15 requested keywords:
+Mother's Day Gifts, Holiday Gifts, Christmas Decorations, Valentine's Day Gifts, Black Friday Deals, Beachwear Deals, Sunscreen Deals, Winter Boots, Halloween Costumes, Lego Sets Deals, Father's Day Gifts, Cyber Monday Deals, Amazon Prime Day Deals, Memorial Day Deals, Independence Day Deals.
 
-## `src/routes/admin.tsx` changes
+### 2. New routes (TanStack file-based)
 
-- Import shared `Department`, `Tier`, `AffiliateLink`, `Keyword`, `TierTable` from `@/lib/types` (drop the local `Dept`, `Link_`, `Keyword`, etc.).
-- Replace each tab's hand-rolled `load()` + `useEffect` with `useResource(...)` from the new hook.
-- Replace inline `if (error) toast.error(...) else { toast.success(...); load(); }` patterns with the `runMutation` helper:
-  - `const { ok } = await runMutation(supabase.from(...).update(...).eq(...), { successMsg: "Saved" }); if (ok) reload();`
-- Split `AdminPage` into smaller components, all in the same file (no public API change):
-  - `<AdminGuard>` — wraps the loading / unauthenticated / non-admin branches and renders `children` only when authorized. Keeps the exact same JSX/copy.
-  - `<AdminHeader email />` — the top bar (`View site`, `ThemeToggle`, `Sign out`).
-  - `<AdminTabs />` — the `<Tabs>` block.
-- For each tab, factor repetitive table cells into tiny local components:
-  - `<SortInput value onChange />` — the number input with `defaultValue` + `onBlur` numeric diff used in Departments and Keywords tabs.
-  - `<UrlCellInput value onChange placeholder />` — used by Departments default URL cell.
-  - `<RowActions onEdit onDelete />` — the two ghost icon buttons used in every table row.
-  - `<EmptyRow colSpan label />` — the "No X yet" row.
-- `LinksTab`:
-  - Extract `linkFormSchema` validation into `validateLinkForm(form)` returning a string error or null.
-  - Extract `<LinkFormDialog />` for the Add/Edit dialog so `LinksTab` only owns table + state.
-  - Replace `tierLabel` / `deptName` lookups with two memoised maps built once per render (`new Map(...)`); same outputs.
-- `KeywordsTab`: same pattern — extract `<KeywordFormDialog />`.
-- `SettingsTab`: keep structure; pass loader functions from `admin-api.ts`. `TierEditor` becomes a thin wrapper that uses `runMutation` and the shared types.
+Each gets its own `head()` with unique title, description, OG/Twitter tags, canonical, and JSON-LD.
 
-## Code-quality polish (both files)
+```text
+src/routes/
+  index.tsx                           (kept; SEO-improved)
+  deals.tsx                           /deals  — hub page linking all categories
+  deals.$slug.tsx                     /deals/{slug} — dynamic SEO landing pages
+  sitemap[.]xml.tsx                   /sitemap.xml — generated from departments + seo_categories
+  robots[.]txt.tsx                    /robots.txt
+```
 
-- Use `const` arrow functions everywhere (already mostly the case); replace `function` declarations only at the top-level component exports — everything else becomes `const X = (...) => ...`.
-- Replace `setForm({ ...form, x: v })` with a typed `updateForm(patch)` helper inside each form-owning component.
-- Use object shorthand and destructuring consistently.
-- Remove dead imports left over after extractions.
-- No new dependencies. No styling, copy, query, or schema changes.
+`deals.$slug.tsx` loads the row from `seo_categories` by slug, renders H1 / intro / body / FAQ / CTA button (opens affiliate URL), and emits `Product`/`ItemList` + `BreadcrumbList` JSON-LD.
 
-## Verification
+`/deals` hub lists all published categories as internal links (boosts internal linking + crawl depth = 2 to every landing page).
 
-- Manual run-through of: home search (exact match / department fallback / global fallback paths), admin auth gating, CRUD on Departments / Links / Keywords / Settings tiers, fallback URL save.
-- TypeScript build passes (strict mode).
+### 3. Per-page SEO improvements
+
+- **Root** (`__root.tsx`): broaden default title/description, add `theme-color`, `og:site_name`, `twitter:card=summary_large_image`, default `og:image`, canonical link helper.
+- **Index** (`/`): change H1 from "Shortlisted Amazon Deals" to a keyword-rich "Find the Best Amazon Deals & Discounts". Add an H2 section "Popular Seasonal Deals" linking to all `/deals/{slug}` pages (internal linking). Add `WebSite` + `SearchAction` JSON-LD.
+- **Headings**: enforce single H1 per route, H2 for section labels (Department, Discount, Reviews, Price → currently `<label>`; keep as labels but add visually-hidden H2 "Filter Amazon Deals"). Landing pages use H1 → H2 (Why / Top picks / FAQ) → H3 (per item).
+- **Image alt text**: every `<img>` (hero, OG previews, keyword chips if image-based) gets descriptive alt derived from category title.
+- **URL slugs**: kebab-case slugs stored in DB, validated on insert.
+
+### 4. Structured data (rich results)
+
+- Root: `Organization` JSON-LD.
+- Home: `WebSite` + `SearchAction`.
+- `/deals`: `BreadcrumbList` + `CollectionPage`.
+- `/deals/{slug}`: `BreadcrumbList` + `ItemList` of featured deals + `FAQPage` (questions stored on category row, optional).
+
+### 5. Crawling & indexing
+
+- `robots.txt` allows all, points to `/sitemap.xml`, disallows `/admin` and `/login`.
+- `sitemap.xml` server route queries `seo_categories` (published) + static routes, sets `lastmod` from `updated_at`.
+- Add `<link rel="canonical">` per route via `head().links`.
+
+### 6. Performance / Core Web Vitals / Mobile
+
+- Preload hero font subset (already preconnected; add `&display=swap` already done).
+- Add `loading="lazy"` and `decoding="async"` to non-hero images; hero gets `fetchpriority="high"`.
+- Inline critical CSS already via Vite; ensure landing-page images use width/height to prevent CLS.
+- Existing TanStack loader cache (5 min) is kept; landing-page loader uses same `staleTime`.
+- Verify viewport meta (present) and tap target sizes (existing chips ≥44px — OK).
+
+### 7. Admin dashboard updates
+
+Add a new "SEO Categories" section in `src/routes/admin.tsx`:
+- Table list with slug, title, published toggle, sort order.
+- Create/edit form for all `seo_categories` fields (title, meta, H1, intro, body, keywords as comma list, affiliate URL, hero/og image URLs, season dates).
+- Reuses existing `runMutation` / `confirmAndDelete` helpers from `src/lib/admin-api.ts`.
+
+### 8. Open Graph / social
+
+Per-route in `head()`:
+- `og:title`, `og:description`, `og:type` (website / article), `og:url`, `og:image` (category `og_image_url` or `hero_image_url`), `og:site_name`.
+- `twitter:card=summary_large_image`, `twitter:title`, `twitter:description`, `twitter:image`.
+
+### Files to add / change
+
+Add:
+- `supabase` migration: create `seo_categories` table + RLS + seed 15 rows.
+- `src/lib/seo.ts` — helpers: `buildMeta({title, description, url, image, type})`, `jsonLd(obj)`.
+- `src/routes/deals.tsx` — hub page.
+- `src/routes/deals.$slug.tsx` — dynamic landing page.
+- `src/routes/sitemap[.]xml.tsx` — server route.
+- `src/routes/robots[.]txt.tsx` — server route.
+
+Edit:
+- `src/routes/__root.tsx` — richer defaults, OG/Twitter tags, organization JSON-LD.
+- `src/routes/index.tsx` — keyword-rich H1, internal links to `/deals/*`, JSON-LD, image alt.
+- `src/routes/admin.tsx` — add SEO Categories CRUD.
+- `src/lib/types.ts` — add `SeoCategory` type.
+- `src/lib/admin-api.ts` — fetch/upsert/delete helpers for `seo_categories`.
+
+### Out of scope (explicitly)
+
+- No content-writing for hundreds of long-form articles; seeded categories ship with concise (~150-word) intros so they're indexable. Admin can expand any time.
+- No third-party analytics or Search Console verification (user-specific).

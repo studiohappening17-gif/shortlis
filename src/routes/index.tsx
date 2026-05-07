@@ -9,7 +9,15 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { chipClasses, gridColsForCount } from "@/lib/chip-styles";
 import { resolveAffiliateUrl } from "@/lib/resolve-affiliate-url";
-import type { Department, Keyword, Tier } from "@/lib/types";
+import type { Department, Keyword, SeoCategory, Tier } from "@/lib/types";
+import {
+  buildMeta,
+  canonicalLink,
+  jsonLdScript,
+  websiteJsonLd,
+} from "@/lib/seo";
+
+type SeoLink = Pick<SeoCategory, "id" | "slug" | "title">;
 
 type HomeData = {
   departments: Department[];
@@ -17,15 +25,17 @@ type HomeData = {
   priceTiers: Tier[];
   reviewTiers: Tier[];
   keywords: Pick<Keyword, "id" | "label" | "affiliate_url" | "emoji">[];
+  seoCategories: SeoLink[];
 };
 
 const loadHomeData = async (): Promise<HomeData> => {
-  const [d, dt, pt, rt, kw] = await Promise.all([
+  const [d, dt, pt, rt, kw, sc] = await Promise.all([
     supabase.from("departments").select("id,name,sort_order,default_affiliate_url").order("sort_order").order("name"),
     supabase.from("discount_tiers").select("id,label,value,sort_order").order("sort_order"),
     supabase.from("price_tiers").select("id,label,value,sort_order").order("sort_order"),
     supabase.from("review_tiers").select("id,label,value,sort_order").order("sort_order"),
     supabase.from("keywords").select("id,label,affiliate_url,emoji").order("sort_order"),
+    supabase.from("seo_categories").select("id,slug,title").eq("is_published", true).order("sort_order"),
   ]);
   return {
     departments: (d.data as Department[]) ?? [],
@@ -33,13 +43,23 @@ const loadHomeData = async (): Promise<HomeData> => {
     priceTiers: (pt.data as Tier[]) ?? [],
     reviewTiers: (rt.data as Tier[]) ?? [],
     keywords: kw.data ?? [],
+    seoCategories: (sc.data as SeoLink[]) ?? [],
   };
 };
+
+const HOME_TITLE = "Amazon Discount Finder — Find 80%+ Off Hidden Deals";
+const HOME_DESC =
+  "Find the best Amazon deals and discounts. Filter by department, discount, price and reviews — plus curated pages for Black Friday, Prime Day, Christmas, Mother's Day, Father's Day and more.";
 
 export const Route = createFileRoute("/")({
   loader: () => loadHomeData(),
   staleTime: 5 * 60 * 1000,
   gcTime: 30 * 60 * 1000,
+  head: () => ({
+    meta: buildMeta({ title: HOME_TITLE, description: HOME_DESC, path: "/" }),
+    links: [canonicalLink("/")],
+    scripts: [jsonLdScript(websiteJsonLd())],
+  }),
   component: HomePage,
   errorComponent: ({ error }) => <ErrorComponent error={error} />,
   notFoundComponent: () => <div className="p-8 text-center">Not found</div>,
@@ -75,7 +95,7 @@ function HomePage() {
     }
   };
 
-  const { departments, discountTiers, priceTiers, reviewTiers, keywords } = data;
+  const { departments, discountTiers, priceTiers, reviewTiers, keywords, seoCategories } = data;
 
   return (
     <div className="min-h-screen bg-background relative">
@@ -115,6 +135,35 @@ function HomePage() {
             )}
           </Button>
         </div>
+
+        {seoCategories.length > 0 && (
+          <section aria-labelledby="seasonal-heading" className="mt-12">
+            <h2 id="seasonal-heading" className="text-lg font-semibold text-foreground">
+              Popular Seasonal Amazon Deals
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Hand-picked deal pages for every major shopping season.
+            </p>
+            <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {seoCategories.map((c: SeoLink) => (
+                <li key={c.id}>
+                  <Link
+                    to="/deals/$slug"
+                    params={{ slug: c.slug }}
+                    className="block rounded-[12px] border border-border/70 bg-card px-4 py-3 text-sm font-medium text-foreground hover:border-amazon transition-colors"
+                  >
+                    {c.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 text-center">
+              <Link to="/deals" className="text-sm text-primary hover:underline">
+                View all deal categories →
+              </Link>
+            </div>
+          </section>
+        )}
 
         <footer className="mt-10 text-center text-xs text-muted-foreground/80">
           As an Amazon Associate, we earn from qualifying purchases.

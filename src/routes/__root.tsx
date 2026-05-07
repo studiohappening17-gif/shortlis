@@ -22,13 +22,26 @@ function NotFoundComponent() {
   );
 }
 
+const ROOT_TITLE = "Amazon Discount Finder — Curated Deals & Seasonal Gift Guides";
+const ROOT_DESC =
+  "Find hidden 80%+ savings on Amazon. Filter by department, discount, price and reviews — plus curated deal pages for Black Friday, Prime Day, Christmas, Mother's Day and more.";
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Amazon Discount Finder" },
-      { name: "description", content: "Find hidden 80%+ savings on Amazon products" },
+      { name: "theme-color", content: "#0F172A" },
+      { name: "format-detection", content: "telephone=no" },
+      { title: ROOT_TITLE },
+      { name: "description", content: ROOT_DESC },
+      { property: "og:site_name", content: "Amazon Discount Finder" },
+      { property: "og:title", content: ROOT_TITLE },
+      { property: "og:description", content: ROOT_DESC },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: ROOT_TITLE },
+      { name: "twitter:description", content: ROOT_DESC },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -39,6 +52,17 @@ export const Route = createRootRoute({
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
       { rel: "stylesheet", href: appCss },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Amazon Discount Finder",
+          url: "https://project--b6f3aade-28f2-4267-a14a-f581e0882e3e.lovable.app",
+        }),
+      },
     ],
   }),
   shellComponent: RootShell,

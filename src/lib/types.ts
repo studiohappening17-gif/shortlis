@@ -30,3 +30,24 @@ export type Keyword = {
 };
 
 export type TierTable = "discount_tiers" | "price_tiers" | "review_tiers";
+
+export type SeoCategory = {
+  id: string;
+  slug: string;
+  title: string;
+  meta_title: string;
+  meta_description: string;
+  h1: string;
+  intro_html: string;
+  body_html: string;
+  keywords: string[];
+  affiliate_url: string;
+  hero_image_url: string | null;
+  og_image_url: string | null;
+  is_published: boolean;
+  is_seasonal: boolean;
+  season_start: string | null;
+  season_end: string | null;
+  sort_order: number;
+  updated_at: string;
+};

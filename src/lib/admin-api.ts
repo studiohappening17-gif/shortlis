@@ -1,6 +1,14 @@
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { AffiliateLink, Department, Keyword, Tier, TierTable } from "./types";
+import type { AffiliateLink, Department, Keyword, SeoCategory, Tier, TierTable } from "./types";
+
+export const fetchSeoCategories = async (): Promise<SeoCategory[]> => {
+  const { data } = await supabase
+    .from("seo_categories")
+    .select("*")
+    .order("sort_order");
+  return (data as SeoCategory[]) ?? [];
+};
 
 export const fetchDepartments = async (): Promise<Department[]> => {
   const { data } = await supabase
@@ -60,7 +68,7 @@ export async function runMutation(
 }
 
 export async function confirmAndDelete(
-  table: "departments" | "affiliate_links" | "keywords" | TierTable,
+  table: "departments" | "affiliate_links" | "keywords" | "seo_categories" | TierTable,
   id: string,
   message = "Delete this item?",
 ): Promise<boolean> {

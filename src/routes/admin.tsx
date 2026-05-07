@@ -12,12 +12,13 @@ import {
   fetchDepartments,
   fetchFallbackUrl,
   fetchKeywords,
+  fetchSeoCategories,
   fetchTiers,
   runMutation,
   upsertFallbackUrl,
 } from "@/lib/admin-api";
 import { useResource } from "@/hooks/useResource";
-import type { AffiliateLink, Department, Keyword, Tier, TierTable } from "@/lib/types";
+import type { AffiliateLink, Department, Keyword, SeoCategory, Tier, TierTable } from "@/lib/types";
 
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -129,11 +130,13 @@ const AdminTabs = () => (
       <TabsTrigger value="links">Affiliate Links</TabsTrigger>
       <TabsTrigger value="departments">Departments</TabsTrigger>
       <TabsTrigger value="keywords">Keywords</TabsTrigger>
+      <TabsTrigger value="seo">SEO Pages</TabsTrigger>
       <TabsTrigger value="settings">Settings</TabsTrigger>
     </TabsList>
     <TabsContent value="links" className="mt-6"><LinksTab /></TabsContent>
     <TabsContent value="departments" className="mt-6"><DepartmentsTab /></TabsContent>
     <TabsContent value="keywords" className="mt-6"><KeywordsTab /></TabsContent>
+    <TabsContent value="seo" className="mt-6"><SeoTab /></TabsContent>
     <TabsContent value="settings" className="mt-6"><SettingsTab /></TabsContent>
   </Tabs>
 );
@@ -882,3 +885,268 @@ function TierEditor({ title, table, items, reload }: TierEditorProps) {
     </section>
   );
 }
+
+/* ============================================================
+   SEO Categories tab — manage seasonal landing pages
+   ============================================================ */
+
+import { Textarea } from "@/components/ui/textarea";
+
+function SeoTab() {
+  const { items, reload } = useResource<SeoCategory[]>(fetchSeoCategories, []);
+  const [editing, setEditing] = useState<SeoCategory | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const blank: Omit<SeoCategory, "id" | "updated_at"> = {
+    slug: "",
+    title: "",
+    meta_title: "",
+    meta_description: "",
+    h1: "",
+    intro_html: "",
+    body_html: "",
+    keywords: [],
+    affiliate_url: "",
+    hero_image_url: null,
+    og_image_url: null,
+    is_published: true,
+    is_seasonal: true,
+    season_start: null,
+    season_end: null,
+    sort_order: (items[items.length - 1]?.sort_order ?? 0) + 10,
+  };
+
+  const togglePublished = async (c: SeoCategory) => {
+    const { ok } = await runMutation(
+      supabase.from("seo_categories").update({ is_published: !c.is_published }).eq("id", c.id),
+      { successMsg: c.is_published ? "Unpublished" : "Published" },
+    );
+    if (ok) reload();
+  };
+
+  const remove = async (c: SeoCategory) => {
+    if (await confirmAndDelete("seo_categories", c.id, `Delete "${c.title}"?`)) reload();
+  };
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">SEO Landing Pages</h2>
+          <p className="text-sm text-muted-foreground">
+            Each row becomes <code>/deals/&#123;slug&#125;</code> and is included in the sitemap.
+          </p>
+        </div>
+        <Button onClick={() => setCreating(true)}>
+          <Plus className="h-4 w-4 mr-1.5" /> New page
+        </Button>
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Title</TableHead>
+            <TableHead>Slug</TableHead>
+            <TableHead className="w-24">Sort</TableHead>
+            <TableHead className="w-28">Published</TableHead>
+            <TableHead className="w-28 text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.length === 0 ? (
+            <EmptyRow colSpan={5} label="No SEO pages yet" />
+          ) : (
+            items.map((c) => (
+              <TableRow key={c.id}>
+                <TableCell className="font-medium">{c.title}</TableCell>
+                <TableCell className="text-xs text-muted-foreground">/deals/{c.slug}</TableCell>
+                <TableCell>{c.sort_order}</TableCell>
+                <TableCell>
+                  <Button
+                    variant={c.is_published ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => togglePublished(c)}
+                  >
+                    {c.is_published ? "Live" : "Draft"}
+                  </Button>
+                </TableCell>
+                <TableCell className="text-right">
+                  <RowActions onEdit={() => setEditing(c)} onDelete={() => remove(c)} />
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+
+      {(editing || creating) && (
+        <SeoEditor
+          initial={editing ?? (blank as SeoCategory)}
+          isNew={creating}
+          onClose={() => {
+            setEditing(null);
+            setCreating(false);
+          }}
+          onSaved={() => {
+            setEditing(null);
+            setCreating(false);
+            reload();
+          }}
+        />
+      )}
+    </section>
+  );
+}
+
+function SeoEditor({
+  initial,
+  isNew,
+  onClose,
+  onSaved,
+}: {
+  initial: SeoCategory;
+  isNew: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    ...initial,
+    keywords: (initial.keywords ?? []).join(", "),
+  });
+  const [saving, setSaving] = useState(false);
+
+  const upd = (k: string, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
+
+  const save = async () => {
+    setSaving(true);
+    const payload = {
+      slug: form.slug.trim(),
+      title: form.title.trim(),
+      meta_title: form.meta_title.trim(),
+      meta_description: form.meta_description.trim(),
+      h1: form.h1.trim(),
+      intro_html: form.intro_html,
+      body_html: form.body_html,
+      keywords: form.keywords
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean),
+      affiliate_url: form.affiliate_url.trim(),
+      hero_image_url: form.hero_image_url || null,
+      og_image_url: form.og_image_url || null,
+      is_published: form.is_published,
+      is_seasonal: form.is_seasonal,
+      season_start: form.season_start || null,
+      season_end: form.season_end || null,
+      sort_order: Number(form.sort_order) || 0,
+    };
+    const q = isNew
+      ? supabase.from("seo_categories").insert(payload)
+      : supabase.from("seo_categories").update(payload).eq("id", initial.id);
+    const { ok } = await runMutation(q, { successMsg: isNew ? "Created" : "Saved" });
+    setSaving(false);
+    if (ok) onSaved();
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{isNew ? "New SEO landing page" : `Edit: ${initial.title}`}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <Field label="Slug (URL)">
+            <Input
+              value={form.slug}
+              onChange={(e) => upd("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
+              placeholder="black-friday-deals"
+            />
+          </Field>
+          <Field label="Title (display + H1 fallback)">
+            <Input value={form.title} onChange={(e) => upd("title", e.target.value)} />
+          </Field>
+          <Field label="H1">
+            <Input value={form.h1} onChange={(e) => upd("h1", e.target.value)} />
+          </Field>
+          <Field label="Meta title (≤60 chars)">
+            <Input value={form.meta_title} onChange={(e) => upd("meta_title", e.target.value)} maxLength={70} />
+          </Field>
+          <Field label="Meta description (≤160 chars)">
+            <Textarea
+              value={form.meta_description}
+              onChange={(e) => upd("meta_description", e.target.value)}
+              maxLength={180}
+              rows={2}
+            />
+          </Field>
+          <Field label="Intro HTML">
+            <Textarea
+              value={form.intro_html}
+              onChange={(e) => upd("intro_html", e.target.value)}
+              rows={3}
+            />
+          </Field>
+          <Field label="Body HTML (optional, supports <h2>/<h3>/<p>)">
+            <Textarea
+              value={form.body_html}
+              onChange={(e) => upd("body_html", e.target.value)}
+              rows={6}
+            />
+          </Field>
+          <Field label="Keywords (comma-separated)">
+            <Input value={form.keywords} onChange={(e) => upd("keywords", e.target.value)} />
+          </Field>
+          <Field label="Amazon affiliate URL">
+            <Input value={form.affiliate_url} onChange={(e) => upd("affiliate_url", e.target.value)} />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Hero image URL">
+              <Input value={form.hero_image_url ?? ""} onChange={(e) => upd("hero_image_url", e.target.value)} />
+            </Field>
+            <Field label="OG image URL">
+              <Input value={form.og_image_url ?? ""} onChange={(e) => upd("og_image_url", e.target.value)} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label="Sort order">
+              <Input
+                type="number"
+                value={form.sort_order}
+                onChange={(e) => upd("sort_order", e.target.value)}
+              />
+            </Field>
+            <Field label="Season start">
+              <Input
+                type="date"
+                value={form.season_start ?? ""}
+                onChange={(e) => upd("season_start", e.target.value)}
+              />
+            </Field>
+            <Field label="Season end">
+              <Input
+                type="date"
+                value={form.season_end ?? ""}
+                onChange={(e) => upd("season_end", e.target.value)}
+              />
+            </Field>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.is_published}
+              onChange={(e) => upd("is_published", e.target.checked)}
+            />
+            Published
+          </label>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={save} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
