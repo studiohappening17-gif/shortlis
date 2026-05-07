@@ -145,7 +145,7 @@ function HomePage() {
               Hand-picked deal pages for every major shopping season.
             </p>
             <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {seoCategories.map((c) => (
+              {seoCategories.map((c: SeoLink) => (
                 <li key={c.id}>
                   <Link
                     to="/deals/$slug"
