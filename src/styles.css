@@ -149,9 +149,9 @@
   --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.551 0.027 264.364);
-  --amazon: oklch(0.83 0.17 85);
-  --amazon-hover: oklch(0.88 0.17 85);
-  --amazon-foreground: oklch(0.15 0.02 264);
+  --amazon: oklch(0.74 0.14 55);
+  --amazon-hover: oklch(0.78 0.14 55);
+  --amazon-foreground: oklch(0.18 0.02 264);
   --chip-selected-bg: oklch(0.32 0.06 70);
   --chip-selected-border: oklch(0.83 0.17 85);
   --chip-selected-text: oklch(0.95 0.05 90);
