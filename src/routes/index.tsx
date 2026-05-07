@@ -146,8 +146,6 @@ function HomePage() {
                 View all →
               </Link>
             </div>
-            <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 hidden">
-            </ul>
           </section>
         )}
 
