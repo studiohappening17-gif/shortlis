@@ -321,19 +321,19 @@ function DepartmentsTab() {
         <DialogContent>
           <DialogHeader><DialogTitle>Edit department</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <Field label="Name">
+            <SeoField label="Name">
               <Input
                 value={editForm.name}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
               />
-            </Field>
-            <Field label="Order">
+            </SeoField>
+            <SeoField label="Order">
               <Input
                 type="number"
                 value={editForm.sort_order}
                 onChange={(e) => setEditForm({ ...editForm, sort_order: Number(e.target.value) })}
               />
-            </Field>
+            </SeoField>
             <Field
               label="Default Affiliate Link"
               hint="Used when a user's filter combination has no specific affiliate link."
@@ -343,7 +343,7 @@ function DepartmentsTab() {
                 value={editForm.url}
                 onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
               />
-            </Field>
+            </SeoField>
           </div>
           <DialogFooter><Button onClick={save}>Save</Button></DialogFooter>
         </DialogContent>
@@ -551,7 +551,7 @@ const LinkFormDialog = ({
           <DialogTitle>{editing ? "Edit" : "New"} affiliate link</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Field label="Department">
+          <SeoField label="Department">
             <Select value={form.dept_id} onValueChange={(v) => patch({ dept_id: v })}>
               <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
               <SelectContent>
@@ -559,7 +559,7 @@ const LinkFormDialog = ({
                 {depts.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
               </SelectContent>
             </Select>
-          </Field>
+          </SeoField>
           <div className="grid grid-cols-2 gap-3">
             <TierSelect label="Discount" tiers={discounts} value={form.discount_range}
               onChange={(v) => patch({ discount_range: v })} />
@@ -568,13 +568,13 @@ const LinkFormDialog = ({
             <TierSelect label="Reviews" tiers={reviews} value={form.review_range}
               onChange={(v) => patch({ review_range: v })} />
           </div>
-          <Field label="Affiliate URL">
+          <SeoField label="Affiliate URL">
             <Input
               placeholder="https://amazon.com/..."
               value={form.affiliate_url}
               onChange={(e) => patch({ affiliate_url: e.target.value })}
             />
-          </Field>
+          </SeoField>
         </div>
         <DialogFooter><Button onClick={onSave}>Save</Button></DialogFooter>
       </DialogContent>
@@ -593,14 +593,14 @@ const TierSelect = ({
   value: string;
   onChange: (v: string) => void;
 }) => (
-  <Field label={label}>
+  <SeoField label={label}>
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
       <SelectContent>
         {tiers.map((t) => <SelectItem key={t.id} value={t.value}>{t.label}</SelectItem>)}
       </SelectContent>
     </Select>
-  </Field>
+  </SeoField>
 );
 
 /* ============================================================
@@ -719,35 +719,35 @@ function KeywordsTab() {
             <DialogTitle>{editing ? "Edit" : "New"} keyword</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <Field label="Emoji / Icon (optional)">
+            <SeoField label="Emoji / Icon (optional)">
               <Input
                 value={form.emoji}
                 onChange={(e) => patch({ emoji: e.target.value })}
                 placeholder="🎁"
                 maxLength={8}
               />
-            </Field>
-            <Field label="Label">
+            </SeoField>
+            <SeoField label="Label">
               <Input
                 value={form.label}
                 onChange={(e) => patch({ label: e.target.value })}
                 placeholder="Giftable tech under $30"
               />
-            </Field>
-            <Field label="Affiliate URL">
+            </SeoField>
+            <SeoField label="Affiliate URL">
               <Input
                 value={form.affiliate_url}
                 onChange={(e) => patch({ affiliate_url: e.target.value })}
                 placeholder="https://amazon.com/..."
               />
-            </Field>
-            <Field label="Order">
+            </SeoField>
+            <SeoField label="Order">
               <Input
                 type="number"
                 value={form.sort_order}
                 onChange={(e) => patch({ sort_order: Number(e.target.value) })}
               />
-            </Field>
+            </SeoField>
           </div>
           <DialogFooter><Button onClick={save}>Save</Button></DialogFooter>
         </DialogContent>
@@ -1055,80 +1055,80 @@ function SeoEditor({
           <DialogTitle>{isNew ? "New SEO landing page" : `Edit: ${initial.title}`}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4">
-          <Field label="Slug (URL)">
+          <SeoField label="Slug (URL)">
             <Input
               value={form.slug}
               onChange={(e) => upd("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"))}
               placeholder="black-friday-deals"
             />
-          </Field>
-          <Field label="Title (display + H1 fallback)">
+          </SeoField>
+          <SeoField label="Title (display + H1 fallback)">
             <Input value={form.title} onChange={(e) => upd("title", e.target.value)} />
-          </Field>
-          <Field label="H1">
+          </SeoField>
+          <SeoField label="H1">
             <Input value={form.h1} onChange={(e) => upd("h1", e.target.value)} />
-          </Field>
-          <Field label="Meta title (≤60 chars)">
+          </SeoField>
+          <SeoField label="Meta title (≤60 chars)">
             <Input value={form.meta_title} onChange={(e) => upd("meta_title", e.target.value)} maxLength={70} />
-          </Field>
-          <Field label="Meta description (≤160 chars)">
+          </SeoField>
+          <SeoField label="Meta description (≤160 chars)">
             <Textarea
               value={form.meta_description}
               onChange={(e) => upd("meta_description", e.target.value)}
               maxLength={180}
               rows={2}
             />
-          </Field>
-          <Field label="Intro HTML">
+          </SeoField>
+          <SeoField label="Intro HTML">
             <Textarea
               value={form.intro_html}
               onChange={(e) => upd("intro_html", e.target.value)}
               rows={3}
             />
-          </Field>
-          <Field label="Body HTML (optional, supports <h2>/<h3>/<p>)">
+          </SeoField>
+          <SeoField label="Body HTML (optional, supports <h2>/<h3>/<p>)">
             <Textarea
               value={form.body_html}
               onChange={(e) => upd("body_html", e.target.value)}
               rows={6}
             />
-          </Field>
-          <Field label="Keywords (comma-separated)">
+          </SeoField>
+          <SeoField label="Keywords (comma-separated)">
             <Input value={form.keywords} onChange={(e) => upd("keywords", e.target.value)} />
-          </Field>
-          <Field label="Amazon affiliate URL">
+          </SeoField>
+          <SeoField label="Amazon affiliate URL">
             <Input value={form.affiliate_url} onChange={(e) => upd("affiliate_url", e.target.value)} />
-          </Field>
+          </SeoField>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Hero image URL">
+            <SeoField label="Hero image URL">
               <Input value={form.hero_image_url ?? ""} onChange={(e) => upd("hero_image_url", e.target.value)} />
-            </Field>
-            <Field label="OG image URL">
+            </SeoField>
+            <SeoField label="OG image URL">
               <Input value={form.og_image_url ?? ""} onChange={(e) => upd("og_image_url", e.target.value)} />
-            </Field>
+            </SeoField>
           </div>
           <div className="grid grid-cols-3 gap-3">
-            <Field label="Sort order">
+            <SeoField label="Sort order">
               <Input
                 type="number"
                 value={form.sort_order}
                 onChange={(e) => upd("sort_order", e.target.value)}
               />
-            </Field>
-            <Field label="Season start">
+            </SeoField>
+            <SeoField label="Season start">
               <Input
                 type="date"
                 value={form.season_start ?? ""}
                 onChange={(e) => upd("season_start", e.target.value)}
               />
-            </Field>
-            <Field label="Season end">
+            </SeoField>
+            <SeoField label="Season end">
               <Input
                 type="date"
                 value={form.season_end ?? ""}
                 onChange={(e) => upd("season_end", e.target.value)}
               />
-            </Field>
+            </SeoField>
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -1150,7 +1150,7 @@ function SeoEditor({
   );
 }
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+function SeoField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">{label}</Label>
