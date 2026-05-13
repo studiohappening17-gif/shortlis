@@ -23,9 +23,9 @@ function NotFoundComponent() {
   );
 }
 
-const ROOT_TITLE = "Amazon Discount Finder — Curated Deals & Seasonal Gift Guides";
-const ROOT_DESC =
-  "Find hidden 80%+ savings on Amazon. Filter by department, discount, price and reviews — plus curated deal pages for Black Friday, Prime Day, Christmas, Mother's Day and more.";
+const ROOT_TITLE = DEFAULT_SEO.title;
+const ROOT_DESC = DEFAULT_SEO.description;
+const ROOT_KEYWORDS = DEFAULT_SEO.keywords.join(", ");
 
 export const Route = createRootRoute({
   head: () => ({
