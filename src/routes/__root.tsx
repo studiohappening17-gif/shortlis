@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/lib/theme";
 import appCss from "../styles.css?url";
+import { DEFAULT_SEO } from "@/lib/seo";
 
 function NotFoundComponent() {
   return (
