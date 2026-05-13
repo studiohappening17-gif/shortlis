@@ -128,7 +128,7 @@ function DealLanding() {
         {c.body_html && (
           <div
             className="prose prose-neutral dark:prose-invert mt-8 max-w-none"
-            dangerouslySetInnerHTML={{ __html: c.body_html }}
+            dangerouslySetInnerHTML={{ __html: sanitize(c.body_html) }}
           />
         )}
 
