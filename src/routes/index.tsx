@@ -16,7 +16,6 @@ import {
   jsonLdScript,
   websiteJsonLd,
 } from "@/lib/seo";
-import { Seo } from "@/components/Seo";
 import { SubscribeDialog } from "@/components/SubscribeDialog";
 
 type SeoLink = Pick<SeoCategory, "id" | "slug" | "title">;
@@ -51,7 +50,7 @@ const loadHomeData = async (): Promise<HomeData> => {
 
 const HOME_TITLE = "Amazon Discount Finder — Find 80%+ Off Hidden Deals";
 const HOME_DESC =
-  "Find the best Amazon deals and discounts. Filter by department, discount, price and reviews — plus curated pages for Black Friday, Prime Day, Christmas, Mother's Day, Father's Day and more.";
+  "Find the best Amazon deals — filter by department, discount, price and reviews, plus curated guides for Black Friday, Prime Day and seasonal events.";
 
 export const Route = createFileRoute("/")({
   loader: () => loadHomeData(),
@@ -101,12 +100,6 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-background relative">
-      <Seo
-        title={HOME_TITLE}
-        description={HOME_DESC}
-        keywords={["Best Gift Idea under 30", "Affordable Amazon Finds 2026", "Amazon Affiliate Recommendations"]}
-        path="/"
-      />
       <TopBar />
 
       <main className="mx-auto max-w-xl px-4 py-12 sm:py-16">
@@ -132,6 +125,7 @@ function HomePage() {
           <Button
             onClick={handleSearch}
             disabled={searching || loading}
+            aria-label="Search Amazon deals"
             className="w-full h-14 text-base font-medium rounded-[14px] bg-amazon hover:bg-amazon-hover active:brightness-95 text-amazon-foreground shadow-sm transition-colors"
           >
             {searching ? (

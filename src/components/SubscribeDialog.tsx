@@ -104,17 +104,20 @@ export function SubscribeDialog() {
 
         <form onSubmit={handleSubscribe} className="space-y-3 pt-2">
           <Input
+            id="subscribe-email"
             type="email"
             placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={submitting}
             required
+            aria-label="Email address"
             className="h-11 rounded-xl"
           />
           <Button
             type="submit"
             disabled={submitting}
+            aria-label="Subscribe to newsletter"
             className="w-full h-11 rounded-xl bg-amazon hover:bg-amazon-hover text-amazon-foreground"
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Subscribe"}

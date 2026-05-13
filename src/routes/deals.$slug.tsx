@@ -14,6 +14,8 @@ import {
   buildMeta,
   canonicalLink,
   jsonLdScript,
+  absoluteUrl,
+  SITE_NAME,
 } from "@/lib/seo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -57,17 +59,17 @@ export const Route = createFileRoute("/deals/$slug")({
         ),
         jsonLdScript({
           "@context": "https://schema.org",
-          "@type": "ItemList",
-          name: loaderData.title,
+          "@type": "Article",
+          headline: loaderData.meta_title,
           description: loaderData.meta_description,
-          itemListElement: [
-            {
-              "@type": "ListItem",
-              position: 1,
-              name: loaderData.title,
-              url: loaderData.affiliate_url,
-            },
-          ],
+          image: image ? [image] : undefined,
+          mainEntityOfPage: absoluteUrl(path),
+          author: { "@type": "Organization", name: SITE_NAME },
+          publisher: {
+            "@type": "Organization",
+            name: SITE_NAME,
+            logo: { "@type": "ImageObject", url: absoluteUrl("/og-default.png") },
+          },
         }),
       ],
     };
