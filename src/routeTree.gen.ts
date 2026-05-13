@@ -13,7 +13,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DealsRouteImport } from './routes/deals'
-import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AdminadminRouteImport } from './routes/adminadmin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DealsSlugRouteImport } from './routes/deals.$slug'
 
@@ -37,9 +37,9 @@ const DealsRoute = DealsRouteImport.update({
   path: '/deals',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AdminadminRoute = AdminadminRouteImport.update({
+  id: '/adminadmin',
+  path: '/adminadmin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -55,7 +55,7 @@ const DealsSlugRoute = DealsSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/adminadmin': typeof AdminadminRoute
   '/deals': typeof DealsRouteWithChildren
   '/login': typeof LoginRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -64,7 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/adminadmin': typeof AdminadminRoute
   '/deals': typeof DealsRouteWithChildren
   '/login': typeof LoginRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -74,7 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/adminadmin': typeof AdminadminRoute
   '/deals': typeof DealsRouteWithChildren
   '/login': typeof LoginRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -85,7 +85,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/admin'
+    | '/adminadmin'
     | '/deals'
     | '/login'
     | '/robots.txt'
@@ -94,7 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
+    | '/adminadmin'
     | '/deals'
     | '/login'
     | '/robots.txt'
@@ -103,7 +103,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/admin'
+    | '/adminadmin'
     | '/deals'
     | '/login'
     | '/robots.txt'
@@ -113,7 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminadminRoute: typeof AdminadminRoute
   DealsRoute: typeof DealsRouteWithChildren
   LoginRoute: typeof LoginRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -150,11 +150,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DealsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/adminadmin': {
+      id: '/adminadmin'
+      path: '/adminadmin'
+      fullPath: '/adminadmin'
+      preLoaderRoute: typeof AdminadminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -186,7 +186,7 @@ const DealsRouteWithChildren = DealsRoute._addFileChildren(DealsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminadminRoute: AdminadminRoute,
   DealsRoute: DealsRouteWithChildren,
   LoginRoute: LoginRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
@@ -195,12 +195,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

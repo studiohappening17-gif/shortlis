@@ -1,6 +1,6 @@
 import { createFileRoute, ErrorComponent, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Check, Loader2, Search, Settings } from "lucide-react";
+import { Check, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -166,11 +166,6 @@ function HomePage() {
 
 const TopBar = () => (
   <div className="absolute top-4 right-4 flex gap-2 z-10">
-    <Link to="/admin">
-      <Button variant="ghost" size="icon" aria-label="Admin">
-        <Settings className="h-4 w-4" />
-      </Button>
-    </Link>
     <ThemeToggle />
   </div>
 );

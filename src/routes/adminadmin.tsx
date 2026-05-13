@@ -48,7 +48,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-export const Route = createFileRoute("/admin")({
+export const Route = createFileRoute("/adminadmin")({
   component: AdminPage,
 });
 
@@ -1147,6 +1147,6 @@ function SeoEditor({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
