@@ -1,6 +1,6 @@
 import { createFileRoute, ErrorComponent, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { Check, Loader2, Search, Settings } from "lucide-react";
+import { Check, Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
