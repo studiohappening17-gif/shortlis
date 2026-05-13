@@ -14,6 +14,8 @@ import {
   buildMeta,
   canonicalLink,
   jsonLdScript,
+  absoluteUrl,
+  SITE_NAME,
 } from "@/lib/seo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
