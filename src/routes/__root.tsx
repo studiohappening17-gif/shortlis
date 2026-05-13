@@ -2,6 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/lib/theme";
 import appCss from "../styles.css?url";
+import { DEFAULT_SEO } from "@/lib/seo";
 
 function NotFoundComponent() {
   return (
@@ -22,9 +23,9 @@ function NotFoundComponent() {
   );
 }
 
-const ROOT_TITLE = "Amazon Discount Finder — Curated Deals & Seasonal Gift Guides";
-const ROOT_DESC =
-  "Find hidden 80%+ savings on Amazon. Filter by department, discount, price and reviews — plus curated deal pages for Black Friday, Prime Day, Christmas, Mother's Day and more.";
+const ROOT_TITLE = DEFAULT_SEO.title;
+const ROOT_DESC = DEFAULT_SEO.description;
+const ROOT_KEYWORDS = DEFAULT_SEO.keywords.join(", ");
 
 export const Route = createRootRoute({
   head: () => ({
@@ -35,7 +36,8 @@ export const Route = createRootRoute({
       { name: "format-detection", content: "telephone=no" },
       { title: ROOT_TITLE },
       { name: "description", content: ROOT_DESC },
-      { property: "og:site_name", content: "Amazon Discount Finder" },
+      { name: "keywords", content: ROOT_KEYWORDS },
+      { property: "og:site_name", content: "ShortListed" },
       { property: "og:title", content: ROOT_TITLE },
       { property: "og:description", content: ROOT_DESC },
       { property: "og:type", content: "website" },
@@ -59,7 +61,7 @@ export const Route = createRootRoute({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
-          name: "Amazon Discount Finder",
+          name: "ShortListed",
           url: "https://project--b6f3aade-28f2-4267-a14a-f581e0882e3e.lovable.app",
         }),
       },

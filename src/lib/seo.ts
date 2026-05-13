@@ -2,7 +2,19 @@
  * SEO helpers — meta tags + JSON-LD for TanStack Router head().
  */
 
-export const SITE_NAME = "Amazon Discount Finder";
+export const SITE_NAME = "ShortListed";
+
+/** Site-wide SEO defaults — applied when a page omits values. */
+export const DEFAULT_SEO = {
+  title: "Best Gift Idea under 30 | ShortListed",
+  description:
+    "Discover affordable Amazon finds and top-rated gift recommendations.",
+  keywords: [
+    "Best Gift Idea under 30",
+    "Affordable Amazon Finds 2026",
+    "Amazon Affiliate Recommendations",
+  ],
+} as const;
 export const SITE_URL =
   (typeof process !== "undefined" && process.env?.SITE_URL) ||
   (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_SITE_URL) ||
