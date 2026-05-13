@@ -100,6 +100,12 @@ function HomePage() {
 
   return (
     <div className="min-h-screen bg-background relative">
+      <Seo
+        title={HOME_TITLE}
+        description={HOME_DESC}
+        keywords={["Best Gift Idea under 30", "Affordable Amazon Finds 2026", "Amazon Affiliate Recommendations"]}
+        path="/"
+      />
       <TopBar />
 
       <main className="mx-auto max-w-xl px-4 py-12 sm:py-16">
