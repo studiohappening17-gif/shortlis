@@ -125,6 +125,7 @@ function HomePage() {
           <Button
             onClick={handleSearch}
             disabled={searching || loading}
+            aria-label="Search Amazon deals"
             className="w-full h-14 text-base font-medium rounded-[14px] bg-amazon hover:bg-amazon-hover active:brightness-95 text-amazon-foreground shadow-sm transition-colors"
           >
             {searching ? (
