@@ -2,7 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/lib/theme";
 import appCss from "../styles.css?url";
-import { DEFAULT_SEO } from "@/lib/seo";
+import { DEFAULT_SEO, SITE_NAME, SITE_URL, organizationJsonLd } from "@/lib/seo";
 
 function NotFoundComponent() {
   return (
@@ -25,7 +25,6 @@ function NotFoundComponent() {
 
 const ROOT_TITLE = DEFAULT_SEO.title;
 const ROOT_DESC = DEFAULT_SEO.description;
-const ROOT_KEYWORDS = DEFAULT_SEO.keywords.join(", ");
 
 export const Route = createRootRoute({
   head: () => ({
@@ -36,22 +35,9 @@ export const Route = createRootRoute({
       { name: "format-detection", content: "telephone=no" },
       { title: ROOT_TITLE },
       { name: "description", content: ROOT_DESC },
-      { name: "keywords", content: ROOT_KEYWORDS },
-      { property: "og:site_name", content: "ShortListed" },
-      { property: "og:title", content: ROOT_TITLE },
-      { property: "og:description", content: ROOT_DESC },
+      { property: "og:site_name", content: SITE_NAME },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: ROOT_TITLE },
-      { name: "twitter:description", content: ROOT_DESC },
-      { title: "ShortListed | Best Gift Ideas & Amazon Promotions" },
-      { property: "og:title", content: "ShortListed | Best Gift Ideas & Amazon Promotions" },
-      { name: "twitter:title", content: "ShortListed | Best Gift Ideas & Amazon Promotions" },
-      { name: "description", content: "Discover hand-picked Amazon Affiliate Recommendations and the best gift ideas under $30. Explore affordable Amazon finds for 2026 with curated promotions update" },
-      { property: "og:description", content: "Discover hand-picked Amazon Affiliate Recommendations and the best gift ideas under $30. Explore affordable Amazon finds for 2026 with curated promotions update" },
-      { name: "twitter:description", content: "Discover hand-picked Amazon Affiliate Recommendations and the best gift ideas under $30. Explore affordable Amazon finds for 2026 with curated promotions update" },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/dc14a18a-bbb3-44bb-b2ee-d2922d014ba2" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/dc14a18a-bbb3-44bb-b2ee-d2922d014ba2" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -66,12 +52,7 @@ export const Route = createRootRoute({
     scripts: [
       {
         type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Organization",
-          name: "ShortListed",
-          url: "https://project--b6f3aade-28f2-4267-a14a-f581e0882e3e.lovable.app",
-        }),
+        children: JSON.stringify(organizationJsonLd()),
       },
     ],
   }),
