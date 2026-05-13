@@ -18,7 +18,7 @@ export const DEFAULT_SEO = {
 export const SITE_URL =
   (typeof process !== "undefined" && process.env?.SITE_URL) ||
   (typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_SITE_URL) ||
-  "https://project--b6f3aade-28f2-4267-a14a-f581e0882e3e.lovable.app";
+  "https://shortlis.lovable.app";
 
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-default.png`;
 
