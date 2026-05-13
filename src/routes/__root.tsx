@@ -61,7 +61,7 @@ export const Route = createRootRoute({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
-          name: "Amazon Discount Finder",
+          name: "ShortListed",
           url: "https://project--b6f3aade-28f2-4267-a14a-f581e0882e3e.lovable.app",
         }),
       },
