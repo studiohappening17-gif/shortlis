@@ -1,6 +1,13 @@
 import { createFileRoute, ErrorComponent, Link, notFound } from "@tanstack/react-router";
 import { Search } from "lucide-react";
+import DOMPurify from "isomorphic-dompurify";
 import { supabase } from "@/integrations/supabase/client";
+
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: ["p", "h2", "h3", "h4", "a", "ul", "ol", "li", "strong", "em", "br", "span", "blockquote"],
+  ALLOWED_ATTR: ["href", "target", "rel"],
+};
+const sanitize = (html: string) => DOMPurify.sanitize(html ?? "", SANITIZE_CONFIG);
 import type { SeoCategory } from "@/lib/types";
 import {
   breadcrumbJsonLd,
@@ -107,7 +114,7 @@ function DealLanding() {
 
         <div
           className="prose prose-neutral dark:prose-invert mt-5 max-w-none"
-          dangerouslySetInnerHTML={{ __html: c.intro_html }}
+          dangerouslySetInnerHTML={{ __html: sanitize(c.intro_html) }}
         />
 
         <div className="mt-6">
@@ -121,7 +128,7 @@ function DealLanding() {
         {c.body_html && (
           <div
             className="prose prose-neutral dark:prose-invert mt-8 max-w-none"
-            dangerouslySetInnerHTML={{ __html: c.body_html }}
+            dangerouslySetInnerHTML={{ __html: sanitize(c.body_html) }}
           />
         )}
 
