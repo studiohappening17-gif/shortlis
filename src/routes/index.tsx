@@ -51,7 +51,7 @@ const loadHomeData = async (): Promise<HomeData> => {
 
 const HOME_TITLE = "Amazon Discount Finder — Find 80%+ Off Hidden Deals";
 const HOME_DESC =
-  "Find the best Amazon deals and discounts. Filter by department, discount, price and reviews — plus curated pages for Black Friday, Prime Day, Christmas, Mother's Day, Father's Day and more.";
+  "Find the best Amazon deals — filter by department, discount, price and reviews, plus curated guides for Black Friday, Prime Day and seasonal events.";
 
 export const Route = createFileRoute("/")({
   loader: () => loadHomeData(),
