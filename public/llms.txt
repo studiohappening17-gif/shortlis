@@ -1,0 +1,14 @@
+# ShortListed
+
+> Curated Amazon deal finder — filter hidden discounts by department, price, discount and reviews, plus seasonal gift guides.
+
+ShortListed (shortlis.lovable.app) helps shoppers discover deeply discounted, well-reviewed Amazon products. The home page is an interactive deal finder; the /deals hub links to editorial guides for major shopping seasons (Black Friday, Prime Day, Christmas, Mother's Day, Father's Day, etc.). As an Amazon Associate, we earn from qualifying purchases.
+
+## Pages
+
+- [Home — Amazon Discount Finder](/): Filter Amazon deals by department, discount, price and review tier.
+- [Deals Hub](/deals): Browse all seasonal Amazon gift guides and deal collections.
+
+## Optional
+
+- [Subscribe](/): Use the Subscribe button in the header to join the email list (2-3 curated updates per month).
