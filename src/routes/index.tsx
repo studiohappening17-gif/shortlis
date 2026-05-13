@@ -16,6 +16,7 @@ import {
   jsonLdScript,
   websiteJsonLd,
 } from "@/lib/seo";
+import { Seo } from "@/components/Seo";
 
 type SeoLink = Pick<SeoCategory, "id" | "slug" | "title">;
 
