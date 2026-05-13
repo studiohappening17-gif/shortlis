@@ -17,6 +17,7 @@ import {
   websiteJsonLd,
 } from "@/lib/seo";
 import { Seo } from "@/components/Seo";
+import { SubscribeDialog } from "@/components/SubscribeDialog";
 
 type SeoLink = Pick<SeoCategory, "id" | "slug" | "title">;
 
