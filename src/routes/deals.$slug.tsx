@@ -114,7 +114,7 @@ function DealLanding() {
 
         <div
           className="prose prose-neutral dark:prose-invert mt-5 max-w-none"
-          dangerouslySetInnerHTML={{ __html: c.intro_html }}
+          dangerouslySetInnerHTML={{ __html: sanitize(c.intro_html) }}
         />
 
         <div className="mt-6">
