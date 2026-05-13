@@ -167,6 +167,7 @@ function HomePage() {
 
 const TopBar = () => (
   <div className="absolute top-4 right-4 flex gap-2 z-10">
+    <SubscribeDialog />
     <ThemeToggle />
   </div>
 );
