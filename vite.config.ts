@@ -6,11 +6,13 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite' // <- 이 부분이 추가되었습니다!
 import path from 'path'
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(), // <- 이 부분이 추가되었습니다!
   ],
   resolve: {
     alias: {
