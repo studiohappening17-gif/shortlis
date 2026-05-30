@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 
 const emailSchema = z.string().trim().email("Enter a valid email").max(255);
 
@@ -23,6 +22,7 @@ export function SubscribeDialog() {
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // 이메일 구독
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = emailSchema.safeParse(email);
@@ -54,33 +54,24 @@ export function SubscribeDialog() {
     }
   };
 
+  // Google 로그인 구독 (Supabase Auth 사용)
   const handleGoogle = async () => {
     setSubmitting(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
-      if (result.error) {
+      if (error) {
         toast.error("Google sign-in failed");
         setSubmitting(false);
-        return;
       }
-      if (result.redirected) return;
-      // Got tokens back — record subscription
-      const { data: userData } = await supabase.auth.getUser();
-      const userEmail = userData.user?.email;
-      if (userEmail) {
-        const { error } = await supabase
-          .from("subscribers")
-          .insert({ email: userEmail, source: "google", user_id: userData.user!.id });
-        if (error && error.code !== "23505") throw error;
-        toast.success("Subscribed! Welcome to ShortListed.");
-        setOpen(false);
-      }
+      // 성공하면 Google 페이지로 리다이렉트됨
     } catch (err) {
       console.error(err);
-      toast.error("Could not subscribe with Google.");
-    } finally {
+      toast.error("Could not sign in with Google.");
       setSubmitting(false);
     }
   };
@@ -151,7 +142,10 @@ export function SubscribeDialog() {
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} aria-hidden>
-      <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.3 14.7 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z"/>
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.5c-.2 1.4-1.7 4.1-5.5 4.1-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.9 3.3 14.7 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z"
+      />
     </svg>
   );
 }
